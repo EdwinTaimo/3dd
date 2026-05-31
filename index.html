@@ -1,460 +1,1027 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa 3D Interativo - Campus Universitário</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #0f172a;
-            color: #f8fafc;
-        }
-
-        #canvas-container {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-
-        /* Interface de Utilizador (UI) Overlay */
-        .ui-panel {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-            width: 320px;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-        }
-
-        h1 {
-            font-size: 1.2rem;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #38bdf8;
-            letter-spacing: 0.5px;
-        }
-
-        p.subtitle {
-            font-size: 0.8rem;
-            color: #94a3b8;
-            margin-bottom: 15px;
-        }
-
-        .search-box {
-            position: relative;
-            margin-bottom: 15px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 12px 16px;
-            background: rgba(30, 41, 59, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 0.9rem;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        input[type="text"]:focus {
-            border-color: #38bdf8;
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
-        }
-
-        .results-list {
-            list-style: none;
-            max-height: 180px;
-            overflow-y: auto;
-            border-radius: 8px;
-            background: rgba(30, 41, 59, 0.5);
-        }
-
-        .results-list li {
-            padding: 10px 14px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            transition: background 0.2s;
-        }
-
-        .results-list li:last-child {
-            border-bottom: none;
-        }
-
-        .results-list li:hover {
-            background: rgba(56, 189, 248, 0.2);
-            color: #38bdf8;
-        }
-
-        /* Painel de Informação Info Box */
-        #info-box {
-            margin-top: 15px;
-            padding: 12px;
-            background: rgba(56, 189, 248, 0.1);
-            border-left: 4px solid #38bdf8;
-            border-radius: 4px;
-            display: none;
-        }
-
-        #info-box h3 {
-            font-size: 0.95rem;
-            color: #38bdf8;
-            margin-bottom: 4px;
-        }
-
-        #info-box p {
-            font-size: 0.8rem;
-            color: #cbd5e1;
-            line-height: 1.4;
-        }
-
-        /* Instruções de Navegação */
-        .controls-hint {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(8px);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            color: #94a3b8;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            pointer-events: none;
-            text-align: center;
-        }
-
-        /* Ajustes Mobile */
-        @media (max-width: 480px) {
-            .ui-panel {
-                width: calc(100% - 40px);
-                top: 15px;
-                left: 20px;
-            }
-            .controls-hint {
-                width: 80%;
-                bottom: 15px;
-            }
-        }
-
-        /* Custom Scrollbar para os resultados */
-        .results-list::-webkit-scrollbar {
-            width: 6px;
-        }
-        .results-list::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .results-list::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-        }
-        .results-list::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-    </style>
-    <!-- Carregar Three.js e OrbitControls via CDN confiável -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniMap 3D — Mapa do Campus</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;700;800&display=swap');
+ 
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --accent: #4ade80;
+    --accent2: #60a5fa;
+    --accent3: #f59e0b;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --border: rgba(255,255,255,0.08);
+    --glow: rgba(74,222,128,0.15);
+  }
+ 
+  * { margin:0; padding:0; box-sizing:border-box; }
+ 
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+ 
+  /* HEADER */
+  #header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: rgba(10,14,26,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  #header .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+  #header .subtitle { color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
+ 
+  /* SEARCH */
+  #search-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 8px 18px;
+    width: 320px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  #search-bar:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--glow);
+  }
+  #search-bar input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    width: 100%;
+  }
+  #search-bar input::placeholder { color: var(--muted); }
+  #search-icon { color: var(--muted); font-size: 1rem; }
+ 
+  /* AUTOCOMPLETE */
+  #autocomplete {
+    position: fixed;
+    top: 64px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 360px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 200;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    display: none;
+  }
+  .ac-item {
+    padding: 12px 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: background 0.15s;
+    border-bottom: 1px solid var(--border);
+  }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-item:hover { background: var(--surface2); }
+  .ac-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .ac-info .ac-name { font-size: 0.88rem; font-weight: 500; }
+  .ac-info .ac-desc { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+ 
+  /* CANVAS */
+  #canvas-wrap {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+  }
+  canvas { display: block; }
+ 
+  /* SIDE PANEL */
+  #panel {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    width: 280px;
+    background: rgba(17,24,39,0.92);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    z-index: 90;
+    transform: translateX(320px);
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+  #panel.open { transform: translateX(0); }
+  #panel h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  #panel .p-type {
+    font-size: 0.75rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .p-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: flex-start;
+  }
+  .p-icon { font-size: 1rem; margin-top: 2px; flex-shrink: 0; }
+  .p-label { font-size: 0.75rem; color: var(--muted); }
+  .p-val { font-size: 0.88rem; margin-top: 2px; }
+  #panel .rooms-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .room-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .room-chip:hover {
+    border-color: var(--accent2);
+    background: rgba(96,165,250,0.1);
+    color: var(--accent2);
+  }
+  #close-panel {
+    position: absolute;
+    top: 14px; right: 14px;
+    background: var(--surface2);
+    border: none;
+    color: var(--muted);
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.2s, background 0.2s;
+  }
+  #close-panel:hover { color: var(--text); background: var(--surface); }
+ 
+  /* LEGEND */
+  #legend {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(17,24,39,0.9);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    z-index: 90;
+    min-width: 200px;
+  }
+  #legend h4 {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .leg-item:hover { background: var(--surface2); }
+  .leg-item:last-child { margin-bottom: 0; }
+  .leg-box { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+  .leg-label { font-size: 0.8rem; color: var(--text); }
+ 
+  /* CONTROLS */
+  #controls {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 90;
+  }
+  .ctrl-btn {
+    width: 42px; height: 42px;
+    background: rgba(17,24,39,0.9);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .ctrl-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px var(--glow);
+  }
+ 
+  /* TOOLTIP */
+  #tooltip {
+    position: fixed;
+    background: rgba(10,14,26,0.95);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    pointer-events: none;
+    z-index: 300;
+    display: none;
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+  }
+ 
+  /* FLOOR SELECTOR */
+  #floor-sel {
+    position: fixed;
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 90;
+  }
+  .floor-btn {
+    width: 38px; height: 38px;
+    background: rgba(17,24,39,0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    font-family: 'Syne', sans-serif;
+  }
+  .floor-btn.active, .floor-btn:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(96,165,250,0.1);
+  }
+ 
+  /* HINT */
+  #hint {
+    position: fixed;
+    bottom: 74px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10,14,26,0.8);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 8px 20px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    z-index: 90;
+    pointer-events: none;
+    animation: fadeHint 4s ease forwards;
+  }
+  @keyframes fadeHint {
+    0%,60%{opacity:1}100%{opacity:0}
+  }
+ 
+  /* MINIMAP */
+  #minimap {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(17,24,39,0.85);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+    z-index: 90;
+  }
+  #minimap canvas { border-radius: 6px; display: block; }
+  #minimap p { font-size: 0.65rem; color: var(--muted); text-align: center; margin-top: 4px; letter-spacing: 0.5px; }
+ 
+  /* SCROLLBAR */
+  #panel::-webkit-scrollbar { width: 4px; }
+  #panel::-webkit-scrollbar-track { background: transparent; }
+  #panel::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+ 
+  .highlight-pulse {
+    animation: pulse 1s ease-out 3;
+  }
+</style>
 </head>
 <body>
-
-    <div id="canvas-container"></div>
-
-    <div class="ui-panel">
-        <h1>Localizador Campus 3D</h1>
-        <p class="subtitle">Encontra as tuas salas e laboratórios</p>
-        
-        <div class="search-box">
-            <input type="text" id="search-input" placeholder="Digita a sala ou bloco... (ex: Sala 102)">
-        </div>
-
-        <ul class="results-list" id="results-container">
-            <!-- Gerado dinamicamente via JS -->
-        </ul>
-
-        <div id="info-box">
-            <h3 id="info-title">Nome do Bloco</h3>
-            <p id="info-desc">Detalhes sobre as salas deste edifício.</p>
-        </div>
+ 
+<div id="header">
+  <div>
+    <div class="logo">🏛 UniMap 3D</div>
+    <div class="subtitle">Mapa Interactivo do Campus</div>
+  </div>
+  <div id="search-bar">
+    <span id="search-icon">🔍</span>
+    <input type="text" id="search-input" placeholder="Pesquisar sala, bloco, serviço…">
+  </div>
+  <div style="width:120px;text-align:right;font-size:0.78rem;color:var(--muted)">
+    <div>Arraste para rodar</div>
+    <div>Scroll para zoom</div>
+  </div>
+</div>
+ 
+<div id="autocomplete"></div>
+ 
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+</div>
+ 
+<div id="panel">
+  <button id="close-panel">✕</button>
+  <div class="p-type" id="p-type">Bloco</div>
+  <h3 id="p-name">—</h3>
+  <div style="height:1px;background:var(--border);margin:12px 0"></div>
+  <div class="p-row">
+    <span class="p-icon">📍</span>
+    <div><div class="p-label">Localização</div><div class="p-val" id="p-loc">—</div></div>
+  </div>
+  <div class="p-row">
+    <span class="p-icon">🕐</span>
+    <div><div class="p-label">Horário</div><div class="p-val" id="p-hours">—</div></div>
+  </div>
+  <div class="p-row">
+    <span class="p-icon">📞</span>
+    <div><div class="p-label">Contacto</div><div class="p-val" id="p-contact">—</div></div>
+  </div>
+  <div class="p-row" id="p-floor-row">
+    <span class="p-icon">🏢</span>
+    <div><div class="p-label">Pisos</div><div class="p-val" id="p-floors">—</div></div>
+  </div>
+  <div style="margin-top:14px">
+    <div class="p-label" style="margin-bottom:8px">Salas / Serviços</div>
+    <div class="rooms-grid" id="p-rooms"></div>
+  </div>
+</div>
+ 
+<div id="legend">
+  <h4>Legenda</h4>
+</div>
+ 
+<div id="floor-sel">
+  <div style="font-size:0.65rem;color:var(--muted);text-align:center;margin-bottom:4px;letter-spacing:0.5px">PISO</div>
+</div>
+ 
+<div id="controls">
+  <button class="ctrl-btn" id="btn-zoom-in" title="Aproximar">＋</button>
+  <button class="ctrl-btn" id="btn-zoom-out" title="Afastar">－</button>
+  <button class="ctrl-btn" id="btn-reset" title="Reset vista">⟳</button>
+  <button class="ctrl-btn" id="btn-top" title="Vista de cima">🔭</button>
+</div>
+ 
+<div id="tooltip"></div>
+<div id="minimap"><canvas id="mini" width="120" height="80"></canvas><p>CAMPUS OVERVIEW</p></div>
+ 
+<script>
+// ===================== DATA =====================
+const BUILDINGS = [
+  {
+    id:'A', name:'Bloco A — Ciências Exactas', short:'Bloco A',
+    color:'#3b82f6', colorDark:'#1d4ed8', type:'Académico',
+    x:120, z:100, w:140, d:100, h:80,
+    floors:4, loc:'Zona Norte do Campus',
+    hours:'Seg–Sex 07:00–20:00', contact:'(+258) 21 000 001',
+    rooms:['A101','A102','A103','A201','A202','A203','A301','Lab Física','Lab Química','Sala Profs A'],
+    desc:'Departamentos de Matemática, Física e Química'
+  },
+  {
+    id:'B', name:'Bloco B — Engenharia e TI', short:'Bloco B',
+    color:'#8b5cf6', colorDark:'#5b21b6', type:'Académico',
+    x:300, z:100, w:140, d:110, h:100,
+    floors:5, loc:'Zona Norte do Campus',
+    hours:'Seg–Sex 07:00–22:00', contact:'(+258) 21 000 002',
+    rooms:['B101','B102','B201','B202','Lab Informática 1','Lab Informática 2','Lab Electrónica','B301','B401','Sala Profs B'],
+    desc:'Engenharia Informática, Electrónica e Sistemas'
+  },
+  {
+    id:'C', name:'Bloco C — Humanidades', short:'Bloco C',
+    color:'#ec4899', colorDark:'#9d174d', type:'Académico',
+    x:490, z:100, w:130, d:90, h:60,
+    floors:3, loc:'Zona Norte do Campus',
+    hours:'Seg–Sex 07:00–18:00', contact:'(+258) 21 000 003',
+    rooms:['C101','C102','C103','C201','C202','Sala Debate','Sala Arte','Sala Profs C'],
+    desc:'Letras, Filosofia, Sociologia e Comunicação'
+  },
+  {
+    id:'D', name:'Bloco D — Ciências Económicas', short:'Bloco D',
+    color:'#f59e0b', colorDark:'#b45309', type:'Académico',
+    x:120, z:260, w:130, d:100, h:70,
+    floors:3, loc:'Zona Sul do Campus',
+    hours:'Seg–Sex 07:00–20:00', contact:'(+258) 21 000 004',
+    rooms:['D101','D102','D201','D202','D301','Lab Economia','Sala Conferências D','Sala Profs D'],
+    desc:'Gestão, Economia e Contabilidade'
+  },
+  {
+    id:'E', name:'Bloco E — Ciências da Saúde', short:'Bloco E',
+    color:'#10b981', colorDark:'#065f46', type:'Académico',
+    x:300, z:260, w:150, d:110, h:90,
+    floors:4, loc:'Zona Sul do Campus',
+    hours:'Seg–Sex 07:00–20:00', contact:'(+258) 21 000 005',
+    rooms:['E101','E102','Lab Anatomia','Lab Biologia','E201','E202','E301','Sala Profs E'],
+    desc:'Medicina, Enfermagem e Saúde Pública'
+  },
+  {
+    id:'F', name:'Bloco F — Direito', short:'Bloco F',
+    color:'#ef4444', colorDark:'#991b1b', type:'Académico',
+    x:490, z:260, w:120, d:90, h:65,
+    floors:3, loc:'Zona Sul do Campus',
+    hours:'Seg–Sáb 07:00–18:00', contact:'(+258) 21 000 006',
+    rooms:['F101','F102','F103','Tribunal Simulado','F201','F202','Sala Profs F'],
+    desc:'Direito Público, Privado e Internacional'
+  },
+  {
+    id:'LIB', name:'Biblioteca Central', short:'Biblioteca',
+    color:'#6366f1', colorDark:'#3730a3', type:'Serviço',
+    x:300, z:185, w:90, d:60, h:45,
+    floors:2, loc:'Centro do Campus',
+    hours:'Seg–Sex 07:00–22:00 | Sáb 08:00–17:00', contact:'(+258) 21 000 010',
+    rooms:['Sala Leitura 1','Sala Leitura 2','Sala Silêncio','Acervo','Sala Multimédia','Recepção'],
+    desc:'Acervo com mais de 50.000 títulos'
+  },
+  {
+    id:'ADM', name:'Secretaria & Administração', short:'Secretaria',
+    color:'#14b8a6', colorDark:'#0f766e', type:'Serviço',
+    x:120, z:185, w:80, d:55, h:40,
+    floors:2, loc:'Entrada Principal',
+    hours:'Seg–Sex 08:00–17:00', contact:'(+258) 21 000 000',
+    rooms:['Matrículas','Certidões','Tesouraria','Reitoria','Gabinete RH','Sala Reuniões'],
+    desc:'Serviços académicos e administrativos'
+  },
+  {
+    id:'CAN', name:'Cantina Universitária', short:'Cantina',
+    color:'#f97316', colorDark:'#c2410c', type:'Serviço',
+    x:490, z:185, w:100, d:60, h:30,
+    floors:1, loc:'Zona Central',
+    hours:'Seg–Sex 07:00–20:00 | Sáb 08:00–15:00', contact:'(+258) 21 000 020',
+    rooms:['Refeitório A','Refeitório B','Bar','Cozinha','Sala VIP'],
+    desc:'Refeições subsidiadas e cafetaria'
+  },
+  {
+    id:'GYM', name:'Pavilhão Desportivo', short:'Pavilhão',
+    color:'#84cc16', colorDark:'#3f6212', type:'Desporto',
+    x:630, z:160, w:110, d:120, h:35,
+    floors:1, loc:'Zona Leste',
+    hours:'Seg–Sex 06:00–22:00 | Sáb 07:00–18:00', contact:'(+258) 21 000 030',
+    rooms:['Ginásio','Campo Basquete','Campo Voleibol','Balneários','Sala Musculação'],
+    desc:'Instalações desportivas e actividades físicas'
+  },
+  {
+    id:'AUD', name:'Auditório Principal', short:'Auditório',
+    color:'#a855f7', colorDark:'#6b21a8', type:'Evento',
+    x:650, z:280, w:100, d:80, h:40,
+    floors:1, loc:'Zona Leste',
+    hours:'Conforme programação', contact:'(+258) 21 000 040',
+    rooms:['Palco','Sala VIP','Sala Imprensa','Camarins','Foyer'],
+    desc:'Capacidade para 800 pessoas'
+  },
+];
+ 
+const PATHS = [
+  {x1:120,z1:200,x2:630,z2:200},
+  {x1:310,z1:60,x2:310,z2:420},
+  {x1:120,z1:60,x2:650,z2:60},
+  {x1:120,z1:380,x2:650,z2:380},
+  {x1:650,z1:60,x2:650,z2:420},
+  {x1:120,z1:60,x2:120,z2:380},
+];
+ 
+const TREES = [
+  {x:230,z:60},{x:410,z:60},{x:560,z:60},
+  {x:80,z:150},{x:80,z:310},
+  {x:600,z:150},{x:600,z:310},
+  {x:420,z:200},{x:200,z:200},
+  {x:230,z:380},{x:410,z:380},{x:560,z:380},
+  {x:680,z:220},{x:680,z:300},
+];
+ 
+// ===================== CANVAS SETUP =====================
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+ 
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  draw();
+}
+window.addEventListener('resize', resize);
+ 
+// ===================== CAMERA =====================
+let cam = {
+  angleX: 0.52, angleY: 0.6,
+  zoom: 1.0,
+  tx: 0, tz: 0,
+  targetAngleX: 0.52, targetAngleY: 0.6,
+  targetZoom: 1.0,
+};
+ 
+const CX_WORLD = 390, CZ_WORLD = 220;
+ 
+// ===================== INTERACTION =====================
+let drag = false, lastMX, lastMY;
+ 
+canvas.addEventListener('mousedown', e => {
+  drag = true; lastMX = e.clientX; lastMY = e.clientY;
+});
+window.addEventListener('mouseup', () => drag = false);
+window.addEventListener('mousemove', e => {
+  if (!drag) { handleHover(e); return; }
+  const dx = e.clientX - lastMX, dy = e.clientY - lastMY;
+  cam.targetAngleY += dx * 0.008;
+  cam.targetAngleX += dy * 0.006;
+  cam.targetAngleX = Math.max(0.2, Math.min(1.3, cam.targetAngleX));
+  lastMX = e.clientX; lastMY = e.clientY;
+});
+canvas.addEventListener('wheel', e => {
+  cam.targetZoom -= e.deltaY * 0.001;
+  cam.targetZoom = Math.max(0.4, Math.min(2.5, cam.targetZoom));
+  e.preventDefault();
+}, {passive:false});
+ 
+// Touch
+let lastTouches = [];
+canvas.addEventListener('touchstart', e => { lastTouches = [...e.touches]; }, {passive:true});
+canvas.addEventListener('touchmove', e => {
+  if (e.touches.length === 1) {
+    const dx = e.touches[0].clientX - lastTouches[0].clientX;
+    const dy = e.touches[0].clientY - lastTouches[0].clientY;
+    cam.targetAngleY += dx * 0.01;
+    cam.targetAngleX += dy * 0.008;
+    cam.targetAngleX = Math.max(0.2, Math.min(1.3, cam.targetAngleX));
+  } else if (e.touches.length === 2) {
+    const prevDist = Math.hypot(lastTouches[1].clientX-lastTouches[0].clientX, lastTouches[1].clientY-lastTouches[0].clientY);
+    const curDist = Math.hypot(e.touches[1].clientX-e.touches[0].clientX, e.touches[1].clientY-e.touches[0].clientY);
+    cam.targetZoom *= curDist / prevDist;
+    cam.targetZoom = Math.max(0.4, Math.min(2.5, cam.targetZoom));
+  }
+  lastTouches = [...e.touches];
+  e.preventDefault();
+}, {passive:false});
+ 
+canvas.addEventListener('click', e => {
+  const b = pickBuilding(e.clientX, e.clientY);
+  if (b) openPanel(b);
+  else closePanel();
+});
+ 
+// Controls
+document.getElementById('btn-zoom-in').onclick = () => { cam.targetZoom = Math.min(2.5, cam.targetZoom + 0.3); };
+document.getElementById('btn-zoom-out').onclick = () => { cam.targetZoom = Math.max(0.4, cam.targetZoom - 0.3); };
+document.getElementById('btn-reset').onclick = () => { cam.targetAngleX=0.52; cam.targetAngleY=0.6; cam.targetZoom=1.0; };
+document.getElementById('btn-top').onclick = () => { cam.targetAngleX=1.25; cam.targetZoom=0.9; };
+ 
+// ===================== 3D PROJECTION =====================
+function project(x, y, z) {
+  const ax = cam.angleX, ay = cam.angleY;
+  const rx = x - CX_WORLD, rz = z - CZ_WORLD;
+  const cosY = Math.cos(ay), sinY = Math.sin(ay);
+  const x2 = rx * cosY - rz * sinY;
+  const z2 = rx * sinY + rz * cosY;
+  const cosX = Math.cos(ax), sinX = Math.sin(ax);
+  const y2 = y * cosX - z2 * sinX;
+  const z3 = y * sinX + z2 * cosX;
+  const scale = cam.zoom * 0.9;
+  const fov = 700;
+  const sz = fov / (fov + z3);
+  return { sx: W/2 + x2 * sz * scale * 1.3, sy: H/2 + y2 * sz * scale * 1.3 - 30, sz: z3 };
+}
+ 
+// ===================== PICK =====================
+let hoverId = null, selectedId = null;
+ 
+function pickBuilding(mx, my) {
+  for (let i = BUILDINGS.length-1; i >= 0; i--) {
+    const b = BUILDINGS[i];
+    const pts = getBuildingPoints(b);
+    if (ptInPoly(mx, my, pts.base.map(p => project(p.x, 0, p.z)))) return b;
+    if (ptInPoly(mx, my, pts.top.map(p => project(p.x, b.h, p.z)))) return b;
+  }
+  return null;
+}
+ 
+function ptInPoly(mx, my, pts) {
+  let inside = false;
+  for (let i=0, j=pts.length-1; i<pts.length; j=i++) {
+    const xi=pts[i].sx, yi=pts[i].sy, xj=pts[j].sx, yj=pts[j].sy;
+    if (((yi>my)!==(yj>my)) && (mx < (xj-xi)*(my-yi)/(yj-yi)+xi)) inside = !inside;
+  }
+  return inside;
+}
+ 
+function getBuildingPoints(b) {
+  const {x,z,w,d} = b;
+  return {
+    base: [{x,z},{x:x+w,z},{x:x+w,z:z+d},{x,z:z+d}],
+    top:  [{x,z},{x:x+w,z},{x:x+w,z:z+d},{x,z:z+d}],
+  };
+}
+ 
+function handleHover(e) {
+  const b = pickBuilding(e.clientX, e.clientY);
+  const tooltip = document.getElementById('tooltip');
+  if (b) {
+    hoverId = b.id;
+    canvas.style.cursor = 'pointer';
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 14) + 'px';
+    tooltip.style.top = (e.clientY - 10) + 'px';
+    tooltip.innerHTML = `<strong>${b.short}</strong> · ${b.type} · ${b.floors} piso(s)`;
+  } else {
+    hoverId = null;
+    canvas.style.cursor = 'default';
+    tooltip.style.display = 'none';
+  }
+}
+ 
+// ===================== PANEL =====================
+function openPanel(b) {
+  selectedId = b.id;
+  document.getElementById('p-type').textContent = b.type;
+  document.getElementById('p-name').textContent = b.name;
+  document.getElementById('p-loc').textContent = b.loc;
+  document.getElementById('p-hours').textContent = b.hours;
+  document.getElementById('p-contact').textContent = b.contact;
+  document.getElementById('p-floors').textContent = `${b.floors} piso(s)`;
+  const roomsEl = document.getElementById('p-rooms');
+  roomsEl.innerHTML = b.rooms.map(r=>`<div class="room-chip">${r}</div>`).join('');
+  document.getElementById('panel').classList.add('open');
+}
+function closePanel() {
+  selectedId = null;
+  document.getElementById('panel').classList.remove('open');
+}
+document.getElementById('close-panel').onclick = closePanel;
+ 
+// ===================== LEGEND =====================
+const types = [...new Set(BUILDINGS.map(b=>b.type))];
+const typeColors = {};
+BUILDINGS.forEach(b => typeColors[b.type] = b.color);
+const leg = document.getElementById('legend');
+types.forEach(t => {
+  const el = document.createElement('div');
+  el.className = 'leg-item';
+  el.innerHTML = `<div class="leg-box" style="background:${typeColors[t]}"></div><span class="leg-label">${t}</span>`;
+  leg.appendChild(el);
+});
+ 
+// ===================== FLOOR SELECTOR =====================
+const floorSel = document.getElementById('floor-sel');
+let activeFloor = 'all';
+const maxFloors = Math.max(...BUILDINGS.map(b=>b.floors));
+const allBtn = document.createElement('button');
+allBtn.className = 'floor-btn active';
+allBtn.textContent = 'ALL';
+allBtn.onclick = () => { activeFloor='all'; document.querySelectorAll('.floor-btn').forEach(b=>b.classList.remove('active')); allBtn.classList.add('active'); };
+floorSel.appendChild(allBtn);
+for (let f=1; f<=maxFloors; f++) {
+  const fb = document.createElement('button');
+  fb.className = 'floor-btn';
+  fb.textContent = f;
+  fb.dataset.floor = f;
+  fb.onclick = () => {
+    activeFloor = f;
+    document.querySelectorAll('.floor-btn').forEach(b=>b.classList.remove('active'));
+    fb.classList.add('active');
+  };
+  floorSel.appendChild(fb);
+}
+ 
+// ===================== SEARCH =====================
+const searchInput = document.getElementById('search-input');
+const acEl = document.getElementById('autocomplete');
+ 
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase().trim();
+  if (!q) { acEl.style.display='none'; return; }
+  const matches = [];
+  BUILDINGS.forEach(b => {
+    if (b.name.toLowerCase().includes(q) || b.type.toLowerCase().includes(q)) matches.push({b, room:null});
+    b.rooms.forEach(r => { if (r.toLowerCase().includes(q)) matches.push({b, room:r}); });
+  });
+  if (!matches.length) { acEl.style.display='none'; return; }
+  acEl.innerHTML = matches.slice(0,8).map(({b,room}) => `
+    <div class="ac-item" data-id="${b.id}">
+      <div class="ac-dot" style="background:${b.color}"></div>
+      <div class="ac-info">
+        <div class="ac-name">${room ? room : b.short}</div>
+        <div class="ac-desc">${room ? b.short : b.desc}</div>
+      </div>
     </div>
-
-    <div class="controls-hint">
-        Arrasta para rodar | Scroll para Zoom | Botão direito para arrastar o mapa
-    </div>
-
-    <script>
-        // 1. Dados Estruturados do Campus (Simulação Leve Baseada em Nós/Objetos)
-        const campusData = [
-            { 
-                id: 'blocoA', 
-                name: 'Bloco A - Engenharia e TI', 
-                x: -6, z: -4, w: 5, h: 4, d: 4, 
-                color: 0x0ea5e9, 
-                rooms: ['Sala 101', 'Sala 102', 'Sala 103', 'Laboratório de Informática (LTI)', 'Gabinete do Diretor'] 
-            },
-            { 
-                id: 'blocoB', 
-                name: 'Bloco B - Ciências Exatas', 
-                x: 6, z: -5, w: 4, h: 3, d: 5, 
-                color: 0x8b5cf6, 
-                rooms: ['Sala 201', 'Sala 202', 'Laboratório de Física', 'Laboratório de Química'] 
-            },
-            { 
-                id: 'biblioteca', 
-                name: 'Biblioteca Central', 
-                x: 0, z: 6, w: 6, h: 3.5, d: 5, 
-                color: 0xec4899, 
-                rooms: ['Sala de Estudo Geral', 'Zona de Computadores', 'Acervo de Livros'] 
-            },
-            { 
-                id: 'secretaria', 
-                name: 'Secretaria e Registo Académico', 
-                x: -7, z: 5, w: 3.5, h: 2.5, d: 3.5, 
-                color: 0xeab308, 
-                rooms: ['Atendimento ao Estudante', 'Tesouraria', 'Recursos Humanos'] 
-            },
-            { 
-                id: 'cantina', 
-                name: 'Cantina & Lazer', 
-                x: 7, z: 4, w: 4.5, h: 2, d: 4, 
-                color: 0x10b981, 
-                rooms: ['Refeitório', 'Esplanada', 'Copiatória'] 
-            }
-        ];
-
-        // 2. Configuração Básica da Cena Three.js
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0f172a);
-        scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
-
-        // Câmara
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 25, 30);
-
-        // Renderizador otimizado
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limita a 2 para performance mobile
-        renderer.shadowMap.enabled = true;
-        container.appendChild(renderer.domElement);
-
-        // Controlos de órbita
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.maxPolarAngle = Math.PI / 2.1; // Não deixa ir abaixo do chão
-        controls.minDistance = 5;
-        controls.maxDistance = 60;
-
-        // 3. Iluminação do Cenário
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(20, 40, 20);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        scene.add(dirLight);
-
-        // 4. Criação do Ambiente (Chão e Estradas Simples)
-        // Chão Principal (Campus)
-        const floorGeo = new THREE.PlaneGeometry(60, 60);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true;
-        scene.add(floor);
-
-        // Linhas de Grade de Design (Dá o aspeto tecnológico/moderno de mapa)
-        const gridHelper = new THREE.GridHelper(60, 30, 0x38bdf8, 0x334155);
-        gridHelper.position.y = 0.01; // Ligeiramente acima do chão para evitar z-fighting
-        scene.add(gridHelper);
-
-        // 5. Construção dos Edifícios Baseados nos Dados
-        const buildingMeshes = {};
-
-        campusData.forEach(data => {
-            // Grupo para conter o edifício e possíveis marcadores futuros
-            const group = new THREE.Group();
-            group.position.set(data.x, 0, data.z);
-
-            // Geometria da Malha do Edifício
-            const geo = new THREE.BoxGeometry(data.w, data.h, data.d);
-            const mat = new THREE.MeshStandardMaterial({
-                color: data.color,
-                roughness: 0.4,
-                metalness: 0.1,
-                transparent: true,
-                opacity: 0.9
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.y = data.h / 2; // Alinha a base no chão
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            
-            // Guardar meta-dados úteis no próprio objeto
-            mesh.userData = { id: data.id, originalColor: data.color, name: data.name };
-            
-            group.add(mesh);
-            scene.add(group);
-
-            // Guardar referência para manipulação na pesquisa
-            buildingMeshes[data.id] = mesh;
-        });
-
-        // 6. Sistema de Animação de Interpolação (Lerp) para a Câmara
-        let targetLookAt = new THREE.Vector3(0, 0, 0);
-        let targetCameraPos = new THREE.Vector3(0, 25, 30);
-        let isTransitioning = false;
-
-        function smoothMoveCamera(lookAtTarget, cameraTarget) {
-            targetLookAt.copy(lookAtTarget);
-            targetCameraPos.copy(cameraTarget);
-            isTransitioning = true;
-        }
-
-        // 7. Lógica UI, Pesquisa e Interação
-        const searchInput = document.getElementById('search-input');
-        const resultsContainer = document.getElementById('results-container');
-        const infoBox = document.getElementById('info-box');
-        const infoTitle = document.getElementById('info-title');
-        const infoDesc = document.getElementById('info-desc');
-
-        // Inicializar lista completa de salas ao carregar
-        renderResults("");
-
-        searchInput.addEventListener('input', (e) => {
-            renderResults(e.target.value.toLowerCase());
-        });
-
-        function renderResults(query) {
-            resultsContainer.innerHTML = "";
-            let matchesFound = false;
-
-            campusData.forEach(block => {
-                // Verificar se a query bate com o nome do bloco ou com alguma sala contida nele
-                const matchedRooms = block.rooms.filter(room => room.toLowerCase().includes(query));
-                const blockMatches = block.name.toLowerCase().includes(query);
-
-                if (blockMatches || matchedRooms.length > 0) {
-                    matchesFound = true;
-                    
-                    // Se o utilizador pesquisar especificamente e bater numa sala, listar a sala primeiro
-                    if (query !== "" && matchedRooms.length > 0) {
-                        matchedRooms.forEach(room => {
-                            const li = document.createElement('li');
-                            li.innerHTML = `📍 <strong>${room}</strong> <span style="color:#94a3b8; font-size:0.75rem;"><br>localizado no ${block.name}</span>`;
-                            li.addEventListener('click', () => selectBuilding(block.id, room));
-                            resultsContainer.appendChild(li);
-                        });
-                    } else {
-                        // Caso geral ou correspondência de Bloco
-                        const li = document.createElement('li');
-                        li.innerHTML = `🏢 <strong>${block.name}</strong>`;
-                        li.addEventListener('click', () => selectBuilding(block.id, null));
-                        resultsContainer.appendChild(li);
-                    }
-                }
-            });
-
-            if (!matchesFound) {
-                const li = document.createElement('li');
-                li.style.color = '#ef4444';
-                li.innerText = "Nenhuma sala ou bloco encontrado.";
-                resultsContainer.appendChild(li);
-            }
-        }
-
-        function selectBuilding(id, specificRoom) {
-            // Resetar cores de todos os edifícios primeiro
-            Object.values(buildingMeshes).forEach(mesh => {
-                mesh.material.color.setHex(mesh.userData.originalColor);
-                mesh.material.opacity = 0.8;
-            });
-
-            const activeMesh = buildingMeshes[id];
-            const data = campusData.find(d => d.id === id);
-
-            if (activeMesh && data) {
-                // Dar destaque visual piscando ou mudando para cor de seleção (Ciano Vivo)
-                activeMesh.material.color.setHex(0x38bdf8);
-                activeMesh.material.opacity = 1.0;
-
-                // Atualizar Caixa de Informação da UI
-                infoBox.style.display = 'block';
-                if (specificRoom) {
-                    infoTitle.innerText = specificRoom;
-                    infoDesc.innerText = `Esta sala está localizada no edifício: ${data.name}. Siga para este bloco destacado no mapa.`;
-                } else {
-                    infoTitle.innerText = data.name;
-                    infoDesc.innerText = `Salas neste bloco: 
-` + data.rooms.join(', ');
-                }
-
-                // Calcular novas posições de foco da câmara para transição suave
-                const buildingWorldPos = new THREE.Vector3(data.x, data.h / 2, data.z);
-                const newCameraPos = new THREE.Vector3(data.x, data.h + 8, data.z + 12);
-                
-                smoothMoveCamera(buildingWorldPos, newCameraPos);
-            }
-        }
-
-        // 8. Loop de Animação Principal (Render Loop)
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Interpolação suave da câmara se estiver em transição ativa
-            if (isTransitioning) {
-                // Aproximação linear amortecida (Lerp)
-                camera.position.lerp(targetCameraPos, 0.05);
-                controls.target.lerp(targetLookAt, 0.05);
-
-                // Se estiver muito próximo do alvo, encerra transição manual para deixar o utilizador assumir o controlo
-                if (camera.position.distanceTo(targetCameraPos) < 0.1 && controls.target.distanceTo(targetLookAt) < 0.1) {
-                    isTransitioning = false;
-                }
-            }
-
-            // Animação leve de rotação lenta de fundo se o utilizador não estiver a mexer (opcional)
-            // Se quiseres um mapa estático, deixa os controlos ativos gerirem tudo
-            controls.update();
-            renderer.render(scene, `camera`);
-        }
-
-        // Ajustar redimensionamento de ecrã (Responsividade)
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Iniciar loop
-        animate();
-    </script>
+  `).join('');
+  acEl.style.display='block';
+  acEl.querySelectorAll('.ac-item').forEach(el => {
+    el.onclick = () => {
+      const b = BUILDINGS.find(x=>x.id===el.dataset.id);
+      if (b) { openPanel(b); selectedId=b.id; }
+      acEl.style.display='none';
+      searchInput.value='';
+    };
+  });
+});
+document.addEventListener('click', e => { if (!e.target.closest('#search-bar') && !e.target.closest('#autocomplete')) acEl.style.display='none'; });
+ 
+// ===================== DRAWING =====================
+function drawGround() {
+  // Ground grid
+  ctx.save();
+  for (let gx = 0; gx <= 800; gx += 40) {
+    const a = project(gx, 0, 0), b = project(gx, 0, 450);
+    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 0.5; ctx.stroke();
+  }
+  for (let gz = 0; gz <= 450; gz += 40) {
+    const a = project(0, 0, gz), b = project(800, 0, gz);
+    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 0.5; ctx.stroke();
+  }
+  ctx.restore();
+}
+ 
+function drawPaths() {
+  PATHS.forEach(p => {
+    const a = project(p.x1, 0.5, p.z1), b = project(p.x2, 0.5, p.z2);
+    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 6; ctx.lineCap='round'; ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 12; ctx.stroke();
+  });
+}
+ 
+function drawTree(x, z) {
+  const base = project(x, 0, z);
+  const top = project(x, 22, z);
+  // trunk
+  ctx.beginPath();
+  ctx.moveTo(base.sx, base.sy);
+  ctx.lineTo(top.sx, top.sy);
+  ctx.strokeStyle = '#92400e'; ctx.lineWidth = 2; ctx.stroke();
+  // canopy
+  const r = Math.max(3, 10 * cam.zoom);
+  ctx.beginPath();
+  ctx.arc(top.sx, top.sy, r, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(34,197,94,0.7)'; ctx.fill();
+  ctx.beginPath();
+  ctx.arc(top.sx-r*0.3, top.sy-r*0.3, r*0.7, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(74,222,128,0.5)'; ctx.fill();
+}
+ 
+function drawBuilding(b) {
+  const floorHeight = b.h / b.floors;
+  const visibleFloors = activeFloor==='all' ? b.floors : Math.min(parseInt(activeFloor), b.floors);
+  const totalH = floorHeight * visibleFloors;
+ 
+  const isHovered = hoverId === b.id;
+  const isSelected = selectedId === b.id;
+  const alpha = (activeFloor==='all') ? 1 : (b.floors >= parseInt(activeFloor) ? 1 : 0.25);
+ 
+  const {x,z,w,d} = b;
+  ctx.globalAlpha = alpha;
+ 
+  // Ground shadow
+  const corners = [{x,z},{x:x+w,z},{x:x+w,z:z+d},{x,z:z+d}];
+  ctx.beginPath();
+  corners.forEach((c,i) => {
+    const p = project(c.x+4, -2, c.z+4);
+    i===0 ? ctx.moveTo(p.sx,p.sy) : ctx.lineTo(p.sx,p.sy);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
+ 
+  // --- Draw floors ---
+  for (let f = 0; f < visibleFloors; f++) {
+    const y0 = f * floorHeight;
+    const y1 = y0 + floorHeight;
+    const frac = f / b.floors;
+    const isTopFloor = (f === visibleFloors - 1);
+ 
+    // Front face (z+d side)
+    const fl = project(x,   y0, z+d), fr = project(x+w, y0, z+d);
+    const tl = project(x,   y1, z+d), tr = project(x+w, y1, z+d);
+ 
+    // Side face (x+w side)
+    const sfr = project(x+w, y0, z),   sfb = project(x+w, y0, z+d);
+    const str = project(x+w, y1, z),   stb = project(x+w, y1, z+d);
+ 
+    // Color per floor
+    const shade = frac * 0.35;
+    const baseColor = b.color;
+    const darkColor = b.colorDark;
+ 
+    // Front
+    ctx.beginPath(); ctx.moveTo(fl.sx,fl.sy); ctx.lineTo(fr.sx,fr.sy); ctx.lineTo(tr.sx,tr.sy); ctx.lineTo(tl.sx,tl.sy); ctx.closePath();
+    const frontGrad = ctx.createLinearGradient(fl.sx, fl.sy, tl.sx, tl.sy);
+    frontGrad.addColorStop(0, adjustColor(darkColor, -shade*30));
+    frontGrad.addColorStop(1, adjustColor(baseColor, shade*10));
+    ctx.fillStyle = frontGrad; ctx.fill();
+    // Floor line
+    ctx.beginPath(); ctx.moveTo(fl.sx,fl.sy); ctx.lineTo(fr.sx,fr.sy);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth=0.5; ctx.stroke();
+ 
+    // Windows on front
+    if (cam.zoom > 0.6 && !isTopFloor) {
+      const wCount = Math.max(1, Math.floor(w/35));
+      for (let wi=0; wi<wCount; wi++) {
+        const wfrac = (wi+0.5)/wCount;
+        const wx1 = lerp(x, x+w, wfrac-0.1);
+        const wx2 = lerp(x, x+w, wfrac+0.1);
+        const wy1 = y0 + floorHeight*0.25, wy2 = y0 + floorHeight*0.75;
+        const wp1 = project(wx1, wy1, z+d+0.1), wp2 = project(wx2, wy1, z+d+0.1);
+        const wp3 = project(wx2, wy2, z+d+0.1), wp4 = project(wx1, wy2, z+d+0.1);
+        ctx.beginPath(); ctx.moveTo(wp1.sx,wp1.sy); ctx.lineTo(wp2.sx,wp2.sy); ctx.lineTo(wp3.sx,wp3.sy); ctx.lineTo(wp4.sx,wp4.sy); ctx.closePath();
+        ctx.fillStyle = (isHovered||isSelected) ? 'rgba(255,250,200,0.6)' : 'rgba(180,220,255,0.2)'; ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=0.5; ctx.stroke();
+      }
+    }
+ 
+    // Side
+    ctx.beginPath(); ctx.moveTo(sfb.sx,sfb.sy); ctx.lineTo(sfr.sx,sfr.sy); ctx.lineTo(str.sx,str.sy); ctx.lineTo(stb.sx,stb.sy); ctx.closePath();
+    const sideGrad = ctx.createLinearGradient(sfr.sx, sfr.sy, str.sx, str.sy);
+    sideGrad.addColorStop(0, adjustColor(darkColor, -shade*50));
+    sideGrad.addColorStop(1, adjustColor(darkColor, shade*5));
+    ctx.fillStyle = sideGrad; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(sfb.sx,sfb.sy); ctx.lineTo(sfr.sx,sfr.sy);
+    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.5; ctx.stroke();
+  }
+ 
+  // TOP FACE
+  const topCorners = [{x,z},{x:x+w,z},{x:x+w,z:z+d},{x,z:z+d}];
+  ctx.beginPath();
+  topCorners.forEach((c,i) => {
+    const p = project(c.x, totalH, c.z);
+    i===0 ? ctx.moveTo(p.sx,p.sy) : ctx.lineTo(p.sx,p.sy);
+  });
+  ctx.closePath();
+  const topGrad = ctx.createRadialGradient(
+    project(x+w/2,totalH,z+d/2).sx, project(x+w/2,totalH,z+d/2).sy, 0,
+    project(x+w/2,totalH,z+d/2).sx, project(x+w/2,totalH,z+d/2).sy, 60
+  );
+  topGrad.addColorStop(0, lighten(b.color, 30));
+  topGrad.addColorStop(1, b.color);
+  ctx.fillStyle = topGrad; ctx.fill();
+ 
+  // Outline if selected/hovered
+  if (isSelected || isHovered) {
+    const allFaces = [
+      [project(x,0,z+d),project(x+w,0,z+d),project(x+w,totalH,z+d),project(x,totalH,z+d)],
+      [project(x+w,0,z),project(x+w,0,z+d),project(x+w,totalH,z+d),project(x+w,totalH,z)],
+      topCorners.map(c=>project(c.x,totalH,c.z)),
+    ];
+    allFaces.forEach(face => {
+      ctx.beginPath();
+      face.forEach((p,i) => i===0 ? ctx.moveTo(p.sx,p.sy) : ctx.lineTo(p.sx,p.sy));
+      ctx.closePath();
+      ctx.strokeStyle = isSelected ? b.color : 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = isSelected ? 2.5 : 1.5;
+      ctx.stroke();
+    });
+    if (isSelected) {
+      const topC = project(x+w/2, totalH+8, z+d/2);
+      ctx.beginPath();
+      ctx.arc(topC.sx, topC.sy, 5, 0, Math.PI*2);
+      ctx.fillStyle = b.color; ctx.fill();
+      ctx.beginPath();
+      ctx.arc(topC.sx, topC.sy, 9, 0, Math.PI*2);
+      ctx.strokeStyle = b.color; ctx.lineWidth=2; ctx.stroke();
+    }
+  }
+ 
+  // Label on top
+  if (cam.zoom > 0.55) {
+    const labelPos = project(x+w/2, totalH + 5, z+d/2);
+    ctx.save();
+    ctx.globalAlpha = alpha * (isHovered||isSelected ? 1 : 0.85);
+    ctx.font = `bold ${Math.max(9, 11*cam.zoom)}px 'Syne',sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(b.short, labelPos.sx, labelPos.sy);
+    ctx.restore();
+  }
+ 
+  ctx.globalAlpha = 1;
+}
+ 
+function lerp(a,b,t){return a+(b-a)*t;}
+function lighten(hex, pct) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), bl = parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.min(255,r+pct)},${Math.min(255,g+pct)},${Math.min(255,bl+pct)})`;
+}
+function adjustColor(hex, pct) {
+  if (!hex || !hex.startsWith('#')) return hex;
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), bl = parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.min(255,Math.max(0,r+pct))},${Math.min(255,Math.max(0,g+pct))},${Math.min(255,Math.max(0,bl+pct))})`;
+}
+ 
+// ===================== MINIMAP =====================
+function drawMinimap() {
+  const mc = document.getElementById('mini');
+  const mctx = mc.getContext('2d');
+  mctx.clearRect(0,0,120,80);
+  mctx.fillStyle='rgba(17,24,39,1)';
+  mctx.fillRect(0,0,120,80);
+ 
+  const sx = 120/800, sy = 80/450;
+  BUILDINGS.forEach(b => {
+    mctx.fillStyle = b.id===selectedId ? '#fff' : b.color;
+    mctx.globalAlpha = 0.8;
+    mctx.fillRect(b.x*sx, b.z*sy, b.w*sx, b.d*sy);
+  });
+  mctx.globalAlpha = 1;
+}
+ 
+// ===================== RENDER LOOP =====================
+function draw() {
+  ctx.clearRect(0,0,W,H);
+ 
+  // Smooth camera
+  cam.angleX += (cam.targetAngleX - cam.angleX) * 0.12;
+  cam.angleY += (cam.targetAngleY - cam.angleY) * 0.12;
+  cam.zoom   += (cam.targetZoom   - cam.zoom)   * 0.12;
+ 
+  // Sky gradient
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#0a0e1a');
+  sky.addColorStop(1,'#111827');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+ 
+  drawGround();
+  drawPaths();
+ 
+  // Sort buildings by depth
+  const sorted = [...BUILDINGS].sort((a,b) => {
+    const pa = project(a.x+a.w/2,0,a.z+a.d/2);
+    const pb = project(b.x+b.w/2,0,b.z+b.d/2);
+    return pb.sz - pa.sz;
+  });
+ 
+  sorted.forEach(b => drawBuilding(b));
+ 
+  TREES.forEach(t => drawTree(t.x, t.z));
+ 
+  drawMinimap();
+  requestAnimationFrame(draw);
+}
+ 
+// Remove hint after animation
+setTimeout(() => {
+  const h = document.getElementById('hint');
+  if (h) h.remove();
+}, 4500);
+ 
+resize();
+</script>
+ 
+<!-- HINT -->
+<div id="hint">🖱 Arraste para rodar · Scroll para zoom · Clique num bloco para ver detalhes</div>
+ 
 </body>
 </html>
