@@ -3,1025 +3,1290 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UniMap 3D — Mapa do Campus</title>
+<title>UniMap 3D — Campus Interactivo</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;700;800&display=swap');
- 
-  :root {
-    --bg: #0a0e1a;
-    --surface: #111827;
-    --surface2: #1a2235;
-    --accent: #4ade80;
-    --accent2: #60a5fa;
-    --accent3: #f59e0b;
-    --text: #f1f5f9;
-    --muted: #94a3b8;
-    --border: rgba(255,255,255,0.08);
-    --glow: rgba(74,222,128,0.15);
-  }
- 
-  * { margin:0; padding:0; box-sizing:border-box; }
- 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
-    height: 100vh;
-    overflow: hidden;
-    user-select: none;
-  }
- 
-  /* HEADER */
-  #header {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 24px;
-    background: rgba(10,14,26,0.85);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-  }
-  #header .logo {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 1.3rem;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -0.5px;
-  }
-  #header .subtitle { color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
- 
-  /* SEARCH */
-  #search-bar {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 40px;
-    padding: 8px 18px;
-    width: 320px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  #search-bar:focus-within {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--glow);
-  }
-  #search-bar input {
-    background: none;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.9rem;
-    width: 100%;
-  }
-  #search-bar input::placeholder { color: var(--muted); }
-  #search-icon { color: var(--muted); font-size: 1rem; }
- 
-  /* AUTOCOMPLETE */
-  #autocomplete {
-    position: fixed;
-    top: 64px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 360px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    z-index: 200;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-    display: none;
-  }
-  .ac-item {
-    padding: 12px 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: background 0.15s;
-    border-bottom: 1px solid var(--border);
-  }
-  .ac-item:last-child { border-bottom: none; }
-  .ac-item:hover { background: var(--surface2); }
-  .ac-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .ac-info .ac-name { font-size: 0.88rem; font-weight: 500; }
-  .ac-info .ac-desc { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
- 
-  /* CANVAS */
-  #canvas-wrap {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    overflow: hidden;
-  }
-  canvas { display: block; }
- 
-  /* SIDE PANEL */
-  #panel {
-    position: fixed;
-    top: 70px;
-    right: 20px;
-    width: 280px;
-    background: rgba(17,24,39,0.92);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
-    z-index: 90;
-    transform: translateX(320px);
-    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
-    max-height: calc(100vh - 100px);
-    overflow-y: auto;
-  }
-  #panel.open { transform: translateX(0); }
-  #panel h3 {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-  #panel .p-type {
-    font-size: 0.75rem;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 600;
-    margin-bottom: 14px;
-  }
-  .p-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-    align-items: flex-start;
-  }
-  .p-icon { font-size: 1rem; margin-top: 2px; flex-shrink: 0; }
-  .p-label { font-size: 0.75rem; color: var(--muted); }
-  .p-val { font-size: 0.88rem; margin-top: 2px; }
-  #panel .rooms-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    margin-top: 12px;
-  }
-  .room-chip {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 10px;
-    font-size: 0.78rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-  }
-  .room-chip:hover {
-    border-color: var(--accent2);
-    background: rgba(96,165,250,0.1);
-    color: var(--accent2);
-  }
-  #close-panel {
-    position: absolute;
-    top: 14px; right: 14px;
-    background: var(--surface2);
-    border: none;
-    color: var(--muted);
-    border-radius: 50%;
-    width: 28px; height: 28px;
-    cursor: pointer;
-    font-size: 1rem;
-    display: flex; align-items: center; justify-content: center;
-    transition: color 0.2s, background 0.2s;
-  }
-  #close-panel:hover { color: var(--text); background: var(--surface); }
- 
-  /* LEGEND */
-  #legend {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: rgba(17,24,39,0.9);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px;
-    z-index: 90;
-    min-width: 200px;
-  }
-  #legend h4 {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--muted);
-    margin-bottom: 10px;
-    font-weight: 600;
-  }
-  .leg-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    padding: 4px 6px;
-    border-radius: 6px;
-    transition: background 0.15s;
-  }
-  .leg-item:hover { background: var(--surface2); }
-  .leg-item:last-child { margin-bottom: 0; }
-  .leg-box { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
-  .leg-label { font-size: 0.8rem; color: var(--text); }
- 
-  /* CONTROLS */
-  #controls {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 90;
-  }
-  .ctrl-btn {
-    width: 42px; height: 42px;
-    background: rgba(17,24,39,0.9);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 1.1rem;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-  }
-  .ctrl-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    box-shadow: 0 0 12px var(--glow);
-  }
- 
-  /* TOOLTIP */
-  #tooltip {
-    position: fixed;
-    background: rgba(10,14,26,0.95);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 0.82rem;
-    pointer-events: none;
-    z-index: 300;
-    display: none;
-    backdrop-filter: blur(10px);
-    white-space: nowrap;
-  }
- 
-  /* FLOOR SELECTOR */
-  #floor-sel {
-    position: fixed;
-    top: 50%;
-    left: 20px;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    z-index: 90;
-  }
-  .floor-btn {
-    width: 38px; height: 38px;
-    background: rgba(17,24,39,0.85);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-    font-family: 'Syne', sans-serif;
-  }
-  .floor-btn.active, .floor-btn:hover {
-    border-color: var(--accent2);
-    color: var(--accent2);
-    background: rgba(96,165,250,0.1);
-  }
- 
-  /* HINT */
-  #hint {
-    position: fixed;
-    bottom: 74px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(10,14,26,0.8);
-    border: 1px solid var(--border);
-    border-radius: 30px;
-    padding: 8px 20px;
-    font-size: 0.75rem;
-    color: var(--muted);
-    z-index: 90;
-    pointer-events: none;
-    animation: fadeHint 4s ease forwards;
-  }
-  @keyframes fadeHint {
-    0%,60%{opacity:1}100%{opacity:0}
-  }
- 
-  /* MINIMAP */
-  #minimap {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(17,24,39,0.85);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px;
-    z-index: 90;
-  }
-  #minimap canvas { border-radius: 6px; display: block; }
-  #minimap p { font-size: 0.65rem; color: var(--muted); text-align: center; margin-top: 4px; letter-spacing: 0.5px; }
- 
-  /* SCROLLBAR */
-  #panel::-webkit-scrollbar { width: 4px; }
-  #panel::-webkit-scrollbar-track { background: transparent; }
-  #panel::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
- 
-  .highlight-pulse {
-    animation: pulse 1s ease-out 3;
-  }
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Bebas+Neue&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:#080c18;--surface:#0f1623;--surface2:#161f30;--surface3:#1c2840;
+  --accent:#00e5a0;--accent2:#4d9fff;--accent3:#ff6b35;--accent4:#c084fc;
+  --text:#eef2ff;--muted:#7c8db5;--border:rgba(255,255,255,0.07);
+  --glow:rgba(0,229,160,0.18);--glow2:rgba(77,159,255,0.15);
+  --radius:14px;
+}
+.day-mode {
+  --bg:#e8edf5;--surface:#ffffff;--surface2:#f0f4fa;--surface3:#dde4f0;
+  --text:#1a2540;--muted:#6b7a99;--border:rgba(0,0,0,0.08);
+  --glow:rgba(0,180,120,0.15);--glow2:rgba(50,120,220,0.12);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;transition:background .4s,color .4s;}
+
+/* ── LOADER ── */
+#loader{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .6s;}
+#loader.gone{opacity:0;pointer-events:none;}
+.loader-logo{font-family:'Bebas Neue',sans-serif;font-size:3.5rem;letter-spacing:4px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:pulse-logo 1.2s ease-in-out infinite alternate;}
+@keyframes pulse-logo{from{opacity:.6}to{opacity:1}}
+.loader-bar-wrap{width:220px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.loader-bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;animation:load-anim 1.8s ease-out forwards;}
+@keyframes load-anim{0%{width:0}60%{width:75%}100%{width:100%}}
+.loader-txt{font-size:.8rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+
+/* ── CANVAS ── */
+#canvas-wrap{position:fixed;inset:0;}
+canvas{display:block;width:100%;height:100%;}
+
+/* ── HEADER ── */
+#header{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:60px;
+  background:rgba(8,12,24,0.82);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  animation:slideDown .5s ease .5s both;
+}
+.day-mode #header{background:rgba(232,237,245,0.88);}
+@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.logo-wrap{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.logo-text{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:3px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-sub{font-size:.65rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:-4px;}
+
+/* ── SEARCH ── */
+#search-wrap{position:relative;flex:1;max-width:380px;margin:0 24px;}
+#search-bar{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:30px;padding:8px 16px;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+#search-bar:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow);background:var(--surface);}
+#search-bar svg{flex-shrink:0;opacity:.5;}
+#search-input{background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.88rem;width:100%;}
+#search-input::placeholder{color:var(--muted);}
+#search-clear{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0 2px;display:none;}
+#search-clear.show{display:block;}
+
+/* ── AUTOCOMPLETE ── */
+#autocomplete{
+  position:absolute;top:calc(100% + 8px);left:0;right:0;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;z-index:200;
+  box-shadow:0 24px 48px rgba(0,0,0,.5);display:none;
+}
+.ac-section{padding:8px 14px 4px;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;}
+.ac-item{padding:10px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .15s;border-bottom:1px solid var(--border);}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.active{background:var(--surface2);}
+.ac-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.ac-name{font-size:.86rem;font-weight:500;}
+.ac-desc{font-size:.73rem;color:var(--muted);margin-top:1px;}
+.ac-kbd{margin-left:auto;font-size:.65rem;color:var(--muted);background:var(--surface3);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;}
+
+/* ── HEADER ACTIONS ── */
+.hdr-actions{display:flex;align-items:center;gap:8px;}
+.hdr-btn{
+  width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;font-size:.9rem;position:relative;
+}
+.hdr-btn:hover{border-color:var(--accent2);color:var(--accent2);background:var(--surface3);}
+.hdr-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,160,.1);}
+.hdr-btn-label{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:.62rem;color:var(--muted);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;}
+.hdr-btn:hover .hdr-btn-label{opacity:1;}
+
+/* ── SIDE PANEL ── */
+#panel{
+  position:fixed;top:68px;right:16px;width:296px;
+  background:rgba(15,22,35,0.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid var(--border);border-radius:18px;
+  z-index:90;transform:translateX(340px) scale(.96);opacity:0;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+  max-height:calc(100vh - 90px);display:flex;flex-direction:column;overflow:hidden;
+}
+.day-mode #panel{background:rgba(255,255,255,0.97);}
+#panel.open{transform:translateX(0) scale(1);opacity:1;}
+#panel-header{padding:18px 18px 14px;flex-shrink:0;position:relative;}
+#panel-color-bar{height:4px;border-radius:2px;margin-bottom:14px;transition:background .3s;}
+#p-badge{display:inline-flex;align-items:center;gap:6px;font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:10px;}
+#p-name{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:1px;line-height:1.1;}
+#p-subdesc{font-size:.78rem;color:var(--muted);margin-top:4px;line-height:1.4;}
+#close-panel{position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .2s;}
+#close-panel:hover{color:var(--text);background:var(--surface3);}
+#panel-body{padding:0 18px 18px;overflow-y:auto;flex:1;}
+#panel-body::-webkit-scrollbar{width:3px;}
+#panel-body::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+.p-divider{height:1px;background:var(--border);margin:12px 0;}
+.p-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.p-stat{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+.p-stat-val{font-size:1.2rem;font-weight:700;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;}
+.p-stat-lbl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.p-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.p-icon-wrap{width:30px;height:30px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;margin-top:2px;}
+.p-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;}
+.p-val{font-size:.84rem;margin-top:3px;line-height:1.4;}
+.rooms-section-title{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:8px;}
+.rooms-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;}
+.room-chip{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:.76rem;cursor:pointer;transition:all .2s;text-align:center;line-height:1.3;}
+.room-chip:hover{border-color:var(--accent2);background:rgba(77,159,255,.1);color:var(--accent2);}
+.navigate-btn{width:100%;padding:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#000;font-family:'DM Sans',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s,transform .15s;}
+.navigate-btn:hover{opacity:.9;transform:scale(.99);}
+
+/* ── FLOOR SELECTOR ── */
+#floor-sel{position:fixed;top:50%;left:16px;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;z-index:90;animation:slideRight .5s ease .8s both;}
+@keyframes slideRight{from{transform:translateY(-50%) translateX(-60px);opacity:0}to{transform:translateY(-50%) translateX(0);opacity:1}}
+.floor-sep{height:1px;background:var(--border);margin:3px 0;}
+.floor-lbl{font-size:.58rem;color:var(--muted);text-align:center;letter-spacing:1px;text-transform:uppercase;padding:2px 0;}
+.floor-btn{
+  width:40px;height:36px;background:rgba(15,22,35,.88);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:9px;color:var(--muted);
+  font-size:.78rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;font-family:'JetBrains Mono',monospace;
+}
+.floor-btn:hover,.floor-btn.active{border-color:var(--accent2);color:var(--accent2);background:rgba(77,159,255,.12);box-shadow:0 0 10px rgba(77,159,255,.15);}
+
+/* ── CONTROLS ── */
+#controls{position:fixed;bottom:24px;right:16px;display:flex;flex-direction:column;gap:6px;z-index:90;animation:slideLeft .5s ease .8s both;}
+@keyframes slideLeft{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+.ctrl-btn{
+  width:40px;height:40px;background:rgba(15,22,35,.88);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:10px;color:var(--text);
+  font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;position:relative;
+}
+.ctrl-btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 14px var(--glow);}
+.ctrl-sep{height:1px;background:var(--border);margin:2px 4px;}
+.ctrl-tip{position:absolute;right:48px;top:50%;transform:translateY(-50%);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:.7rem;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;}
+.ctrl-btn:hover .ctrl-tip{opacity:1;}
+
+/* ── LEGEND ── */
+#legend{
+  position:fixed;bottom:24px;left:16px;
+  background:rgba(15,22,35,.88);backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:14px;padding:14px 16px;
+  z-index:90;animation:slideUp .5s ease 1s both;min-width:190px;
+}
+.day-mode #legend{background:rgba(255,255,255,.92);}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+#legend h4{font-size:.62rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px;font-weight:600;}
+.leg-item{display:flex;align-items:center;gap:9px;margin-bottom:6px;cursor:pointer;padding:4px 6px;border-radius:7px;transition:background .15s;}
+.leg-item:last-child{margin-bottom:0;}
+.leg-item:hover{background:var(--surface2);}
+.leg-item.dimmed{opacity:.4;}
+.leg-box{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+.leg-label{font-size:.78rem;}
+.leg-count{margin-left:auto;font-size:.65rem;color:var(--muted);background:var(--surface2);padding:1px 6px;border-radius:10px;}
+
+/* ── MINIMAP ── */
+#minimap{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:rgba(15,22,35,.88);backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:12px;padding:10px;z-index:90;
+  animation:slideUp .5s ease 1.1s both;
+}
+.day-mode #minimap{background:rgba(255,255,255,.9);}
+#mini{border-radius:6px;display:block;}
+.mini-label{font-size:.6rem;color:var(--muted);text-align:center;margin-top:5px;letter-spacing:1px;text-transform:uppercase;}
+
+/* ── TOOLTIP ── */
+#tooltip{
+  position:fixed;background:rgba(8,12,24,.97);border:1px solid var(--border);
+  border-radius:9px;padding:8px 14px;font-size:.8rem;pointer-events:none;
+  z-index:300;display:none;backdrop-filter:blur(10px);white-space:nowrap;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+#tooltip .tt-name{font-weight:600;margin-bottom:2px;}
+#tooltip .tt-meta{font-size:.72rem;color:var(--muted);}
+
+/* ── ROUTE OVERLAY ── */
+#route-banner{
+  position:fixed;top:68px;left:50%;transform:translateX(-50%) translateY(-80px);
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;border-radius:30px;padding:10px 20px;z-index:95;
+  display:flex;align-items:center;gap:10px;font-size:.85rem;font-weight:700;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 24px rgba(0,229,160,.3);
+}
+#route-banner.show{transform:translateX(-50%) translateY(0);}
+#route-cancel{background:rgba(0,0,0,.2);border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;}
+
+/* ── TIME WIDGET ── */
+#time-widget{
+  position:fixed;top:68px;left:16px;z-index:90;
+  background:rgba(15,22,35,.88);backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:12px;padding:10px 14px;
+  animation:slideRight .5s ease 1.2s both;
+}
+.day-mode #time-widget{background:rgba(255,255,255,.9);}
+#time-clock{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:500;color:var(--accent);letter-spacing:1px;}
+#time-date{font-size:.65rem;color:var(--muted);margin-top:2px;}
+#campus-status{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:.7rem;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#ef4444;animation:blink 1.5s ease infinite;}
+.status-dot.open{background:var(--accent);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── WEATHER WIDGET ── */
+#weather-widget{
+  position:fixed;top:68px;left:16px;z-index:89;
+  background:rgba(15,22,35,.88);backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:12px;padding:10px 14px;
+  margin-top:90px;animation:slideRight .5s ease 1.3s both;min-width:120px;
+}
+.day-mode #weather-widget{background:rgba(255,255,255,.9);}
+#weather-icon{font-size:1.5rem;margin-bottom:4px;}
+#weather-temp{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:1px;}
+#weather-desc{font-size:.65rem;color:var(--muted);}
+
+/* ── NOTIFICATION TOAST ── */
+#toast{
+  position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:10px 18px;font-size:.82rem;z-index:500;pointer-events:none;
+  opacity:0;transition:all .3s;backdrop-filter:blur(16px);
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── ONBOARDING ── */
+#onboard{
+  position:fixed;inset:0;z-index:400;background:rgba(8,12,24,.85);
+  backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;
+  animation:fadeIn .4s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+#onboard-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:40px;max-width:420px;width:90%;text-align:center;
+}
+#onboard-card h2{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:2px;margin-bottom:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+#onboard-card p{color:var(--muted);font-size:.88rem;line-height:1.6;margin-bottom:24px;}
+.onboard-tips{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px;text-align:left;}
+.onboard-tip{background:var(--surface2);border-radius:10px;padding:12px;font-size:.78rem;line-height:1.5;}
+.onboard-tip strong{display:block;color:var(--accent2);margin-bottom:3px;font-size:.7rem;text-transform:uppercase;letter-spacing:.8px;}
+#onboard-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#000;font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:opacity .2s;}
+#onboard-btn:hover{opacity:.9;}
+
+/* ── KEYBOARD SHORTCUTS MODAL ── */
+#shortcuts-modal{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;}
+#shortcuts-modal.show{display:flex;}
+#shortcuts-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px;width:360px;}
+#shortcuts-card h3{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:2px;margin-bottom:18px;}
+.shortcut-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.83rem;}
+.shortcut-row:last-child{border-bottom:none;}
+.shortcut-key{font-family:'JetBrains Mono',monospace;font-size:.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:3px 8px;color:var(--accent2);}
+
+/* ── COMPASS ── */
+#compass{
+  position:fixed;bottom:24px;right:68px;width:44px;height:44px;z-index:90;
+  background:rgba(15,22,35,.88);backdrop-filter:blur(12px);border:1px solid var(--border);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;transition:transform .1s;cursor:pointer;
+}
+#compass:hover{border-color:var(--accent3);}
+
+/* ── SEARCH SHORTCUT ── */
+.kbd-hint{font-size:.68rem;color:var(--muted);background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-family:'JetBrains Mono',monospace;}
 </style>
 </head>
 <body>
- 
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">UNIMAP 3D</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-txt">A carregar campus…</div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="onboard">
+  <div id="onboard-card">
+    <h2>Bem-vindo ao UniMap 3D</h2>
+    <p>O mapa interactivo do campus para novos ingressos encontrarem as suas salas facilmente.</p>
+    <div class="onboard-tips">
+      <div class="onboard-tip"><strong>🖱 Arrastar</strong>Roda o campus em 3D livremente</div>
+      <div class="onboard-tip"><strong>🔍 Pesquisar</strong>Encontra qualquer sala ou serviço</div>
+      <div class="onboard-tip"><strong>🏢 Clicar</strong>Abre detalhes e lista de salas</div>
+      <div class="onboard-tip"><strong>🗺 Pisos</strong>Filtra por andar do edifício</div>
+    </div>
+    <button id="onboard-btn">Explorar o Campus →</button>
+  </div>
+</div>
+
+<!-- SHORTCUTS MODAL -->
+<div id="shortcuts-modal">
+  <div id="shortcuts-card">
+    <h3>Atalhos de Teclado</h3>
+    <div class="shortcut-row"><span>Pesquisar</span><span class="shortcut-key">Ctrl + K</span></div>
+    <div class="shortcut-row"><span>Fechar painel</span><span class="shortcut-key">Esc</span></div>
+    <div class="shortcut-row"><span>Vista aérea</span><span class="shortcut-key">T</span></div>
+    <div class="shortcut-row"><span>Resetar câmara</span><span class="shortcut-key">R</span></div>
+    <div class="shortcut-row"><span>Zoom +</span><span class="shortcut-key">+</span></div>
+    <div class="shortcut-row"><span>Zoom −</span><span class="shortcut-key">−</span></div>
+    <div class="shortcut-row"><span>Modo dia/noite</span><span class="shortcut-key">D</span></div>
+    <div class="shortcut-row"><span>Fechar este painel</span><span class="shortcut-key">?</span></div>
+  </div>
+</div>
+
+<!-- CANVAS -->
+<div id="canvas-wrap"><canvas id="c"></canvas></div>
+
+<!-- HEADER -->
 <div id="header">
-  <div>
-    <div class="logo">🏛 UniMap 3D</div>
-    <div class="subtitle">Mapa Interactivo do Campus</div>
+  <div class="logo-wrap">
+    <div class="logo-icon">🏛</div>
+    <div>
+      <div class="logo-text">UniMap 3D</div>
+      <div class="logo-sub">Campus Universitário</div>
+    </div>
   </div>
-  <div id="search-bar">
-    <span id="search-icon">🔍</span>
-    <input type="text" id="search-input" placeholder="Pesquisar sala, bloco, serviço…">
+
+  <div id="search-wrap">
+    <div id="search-bar">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search-input" placeholder="Pesquisar sala, bloco, serviço…" autocomplete="off">
+      <button id="search-clear">✕</button>
+      <span class="kbd-hint">Ctrl+K</span>
+    </div>
+    <div id="autocomplete"></div>
   </div>
-  <div style="width:120px;text-align:right;font-size:0.78rem;color:var(--muted)">
-    <div>Arraste para rodar</div>
-    <div>Scroll para zoom</div>
+
+  <div class="hdr-actions">
+    <button class="hdr-btn" id="btn-daynight" title="Modo dia/noite">🌙<span class="hdr-btn-label">Dia/Noite</span></button>
+    <button class="hdr-btn" id="btn-shortcuts" title="Atalhos">⌨<span class="hdr-btn-label">Atalhos</span></button>
+    <button class="hdr-btn" id="btn-share" title="Partilhar">🔗<span class="hdr-btn-label">Partilhar</span></button>
   </div>
 </div>
- 
-<div id="autocomplete"></div>
- 
-<div id="canvas-wrap">
-  <canvas id="c"></canvas>
-</div>
- 
+
+<!-- SIDE PANEL -->
 <div id="panel">
-  <button id="close-panel">✕</button>
-  <div class="p-type" id="p-type">Bloco</div>
-  <h3 id="p-name">—</h3>
-  <div style="height:1px;background:var(--border);margin:12px 0"></div>
-  <div class="p-row">
-    <span class="p-icon">📍</span>
-    <div><div class="p-label">Localização</div><div class="p-val" id="p-loc">—</div></div>
+  <div id="panel-header">
+    <div id="panel-color-bar"></div>
+    <div id="p-badge"></div>
+    <h3 id="p-name">—</h3>
+    <p id="p-subdesc"></p>
+    <button id="close-panel">✕</button>
   </div>
-  <div class="p-row">
-    <span class="p-icon">🕐</span>
-    <div><div class="p-label">Horário</div><div class="p-val" id="p-hours">—</div></div>
-  </div>
-  <div class="p-row">
-    <span class="p-icon">📞</span>
-    <div><div class="p-label">Contacto</div><div class="p-val" id="p-contact">—</div></div>
-  </div>
-  <div class="p-row" id="p-floor-row">
-    <span class="p-icon">🏢</span>
-    <div><div class="p-label">Pisos</div><div class="p-val" id="p-floors">—</div></div>
-  </div>
-  <div style="margin-top:14px">
-    <div class="p-label" style="margin-bottom:8px">Salas / Serviços</div>
+  <div id="panel-body">
+    <div class="p-stats">
+      <div class="p-stat"><div class="p-stat-val" id="ps-floors">—</div><div class="p-stat-lbl">Pisos</div></div>
+      <div class="p-stat"><div class="p-stat-val" id="ps-rooms">—</div><div class="p-stat-lbl">Salas</div></div>
+    </div>
+    <div class="p-divider"></div>
+    <div class="p-row">
+      <div class="p-icon-wrap">📍</div>
+      <div><div class="p-label">Localização</div><div class="p-val" id="p-loc"></div></div>
+    </div>
+    <div class="p-row">
+      <div class="p-icon-wrap">🕐</div>
+      <div><div class="p-label">Horário</div><div class="p-val" id="p-hours"></div></div>
+    </div>
+    <div class="p-row">
+      <div class="p-icon-wrap">📞</div>
+      <div><div class="p-label">Contacto</div><div class="p-val" id="p-contact"></div></div>
+    </div>
+    <div class="p-row">
+      <div class="p-icon-wrap">♿</div>
+      <div><div class="p-label">Acessibilidade</div><div class="p-val" id="p-access"></div></div>
+    </div>
+    <div class="p-divider"></div>
+    <div class="rooms-section-title">Salas & Serviços</div>
     <div class="rooms-grid" id="p-rooms"></div>
+    <button class="navigate-btn" id="btn-navigate">🧭 Como Chegar</button>
   </div>
 </div>
- 
-<div id="legend">
-  <h4>Legenda</h4>
+
+<!-- ROUTE BANNER -->
+<div id="route-banner">
+  <span>🧭</span>
+  <span id="route-text">A navegar para…</span>
+  <button id="route-cancel">✕</button>
 </div>
- 
+
+<!-- FLOOR SELECTOR -->
 <div id="floor-sel">
-  <div style="font-size:0.65rem;color:var(--muted);text-align:center;margin-bottom:4px;letter-spacing:0.5px">PISO</div>
+  <div class="floor-lbl">PISO</div>
 </div>
- 
+
+<!-- CONTROLS -->
 <div id="controls">
-  <button class="ctrl-btn" id="btn-zoom-in" title="Aproximar">＋</button>
-  <button class="ctrl-btn" id="btn-zoom-out" title="Afastar">－</button>
-  <button class="ctrl-btn" id="btn-reset" title="Reset vista">⟳</button>
-  <button class="ctrl-btn" id="btn-top" title="Vista de cima">🔭</button>
+  <button class="ctrl-btn" id="btn-zoom-in">＋<span class="ctrl-tip">Aproximar</span></button>
+  <button class="ctrl-btn" id="btn-zoom-out">－<span class="ctrl-tip">Afastar</span></button>
+  <div class="ctrl-sep"></div>
+  <button class="ctrl-btn" id="btn-reset">⟳<span class="ctrl-tip">Reset câmara</span></button>
+  <button class="ctrl-btn" id="btn-top">⬆<span class="ctrl-tip">Vista aérea</span></button>
+  <button class="ctrl-btn" id="btn-iso">◈<span class="ctrl-tip">Vista isométrica</span></button>
 </div>
- 
-<div id="tooltip"></div>
-<div id="minimap"><canvas id="mini" width="120" height="80"></canvas><p>CAMPUS OVERVIEW</p></div>
- 
+
+<!-- LEGEND -->
+<div id="legend"><h4>Legenda</h4></div>
+
+<!-- COMPASS -->
+<div id="compass" title="Norte">🧭</div>
+
+<!-- MINIMAP -->
+<div id="minimap">
+  <canvas id="mini" width="130" height="88"></canvas>
+  <div class="mini-label">Vista Geral</div>
+</div>
+
+<!-- TIME & WEATHER -->
+<div id="time-widget">
+  <div id="time-clock">00:00:00</div>
+  <div id="time-date"></div>
+  <div id="campus-status"><div class="status-dot open" id="sdot"></div><span id="stext">Campus Aberto</span></div>
+</div>
+<div id="weather-widget">
+  <div id="weather-icon">☀️</div>
+  <div id="weather-temp">28°C</div>
+  <div id="weather-desc">Maputo · Ensolarado</div>
+</div>
+
+<!-- TOOLTIP -->
+<div id="tooltip"><div class="tt-name" id="tt-name"></div><div class="tt-meta" id="tt-meta"></div></div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
 <script>
-// ===================== DATA =====================
+// ═══════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════
 const BUILDINGS = [
   {
     id:'A', name:'Bloco A — Ciências Exactas', short:'Bloco A',
-    color:'#3b82f6', colorDark:'#1d4ed8', type:'Académico',
-    x:120, z:100, w:140, d:100, h:80,
-    floors:4, loc:'Zona Norte do Campus',
-    hours:'Seg–Sex 07:00–20:00', contact:'(+258) 21 000 001',
-    rooms:['A101','A102','A103','A201','A202','A203','A301','Lab Física','Lab Química','Sala Profs A'],
-    desc:'Departamentos de Matemática, Física e Química'
+    color:'#3b82f6',colorDark:'#1e3a8a',type:'Académico',emoji:'🔬',
+    x:100,z:90,w:145,d:105,h:80, floors:4,
+    loc:'Zona Norte · Entrada Principal',
+    hours:'Seg–Sex  07:00–21:00',contact:'(+258) 21 491 001',
+    access:'Rampa + elevador disponíveis',
+    rooms:['A101 – Cálculo I','A102 – Álgebra','A103 – Física Geral','A201 – Cálculo II','A202 – Geometria','A203 – Termodinâmica','A301 – Análise','Lab Física','Lab Química','Sala Professores A'],
+    desc:'Matemática, Física e Química Aplicada. Sede dos departamentos de ciências fundamentais.'
   },
   {
-    id:'B', name:'Bloco B — Engenharia e TI', short:'Bloco B',
-    color:'#8b5cf6', colorDark:'#5b21b6', type:'Académico',
-    x:300, z:100, w:140, d:110, h:100,
-    floors:5, loc:'Zona Norte do Campus',
-    hours:'Seg–Sex 07:00–22:00', contact:'(+258) 21 000 002',
-    rooms:['B101','B102','B201','B202','Lab Informática 1','Lab Informática 2','Lab Electrónica','B301','B401','Sala Profs B'],
-    desc:'Engenharia Informática, Electrónica e Sistemas'
+    id:'B', name:'Bloco B — Engenharia & TI', short:'Bloco B',
+    color:'#8b5cf6',colorDark:'#3b0764',type:'Académico',emoji:'💻',
+    x:290,z:85,w:155,d:115,h:110, floors:5,
+    loc:'Zona Norte · Ala Tecnológica',
+    hours:'Seg–Sex  07:00–23:00',contact:'(+258) 21 491 002',
+    access:'Elevador e WC adaptado',
+    rooms:['B101 – Programação','B102 – Redes','B201 – Algoritmos','B202 – Sistemas Op.','Lab Info 1','Lab Info 2','Lab Electrónica','Lab Robótica','B301 – BD','B401 – IA & ML','Sala Professores B','Sala Servidores'],
+    desc:'Engenharia Informática, Electrónica e Sistemas de Informação. Maior bloco do campus.'
   },
   {
     id:'C', name:'Bloco C — Humanidades', short:'Bloco C',
-    color:'#ec4899', colorDark:'#9d174d', type:'Académico',
-    x:490, z:100, w:130, d:90, h:60,
-    floors:3, loc:'Zona Norte do Campus',
-    hours:'Seg–Sex 07:00–18:00', contact:'(+258) 21 000 003',
-    rooms:['C101','C102','C103','C201','C202','Sala Debate','Sala Arte','Sala Profs C'],
-    desc:'Letras, Filosofia, Sociologia e Comunicação'
+    color:'#ec4899',colorDark:'#831843',type:'Académico',emoji:'📚',
+    x:490,z:95,w:135,d:95,h:60, floors:3,
+    loc:'Zona Norte · Ala Cultural',
+    hours:'Seg–Sex  07:00–19:00',contact:'(+258) 21 491 003',
+    access:'Rampa de acesso + WC adaptado',
+    rooms:['C101 – Língua Port.','C102 – História','C103 – Filosofia','C201 – Sociologia','C202 – Comunicação','C301 – Psicologia','Sala Debate','Sala de Arte','Sala Professores C'],
+    desc:'Letras, Filosofia, Sociologia e Ciências da Comunicação.'
   },
   {
     id:'D', name:'Bloco D — Ciências Económicas', short:'Bloco D',
-    color:'#f59e0b', colorDark:'#b45309', type:'Académico',
-    x:120, z:260, w:130, d:100, h:70,
-    floors:3, loc:'Zona Sul do Campus',
-    hours:'Seg–Sex 07:00–20:00', contact:'(+258) 21 000 004',
-    rooms:['D101','D102','D201','D202','D301','Lab Economia','Sala Conferências D','Sala Profs D'],
-    desc:'Gestão, Economia e Contabilidade'
+    color:'#f59e0b',colorDark:'#78350f',type:'Académico',emoji:'📊',
+    x:100,z:265,w:135,d:105,h:72, floors:3,
+    loc:'Zona Sul · Ala Económica',
+    hours:'Seg–Sex  07:00–20:00',contact:'(+258) 21 491 004',
+    access:'Acesso por rampa principal',
+    rooms:['D101 – Microeconomia','D102 – Macroeconomia','D201 – Finanças','D202 – Gestão Emp.','D301 – Comércio Int.','Lab Economia','Sala Conferências D','Sala Professores D'],
+    desc:'Economia, Gestão Empresarial e Contabilidade.'
   },
   {
     id:'E', name:'Bloco E — Ciências da Saúde', short:'Bloco E',
-    color:'#10b981', colorDark:'#065f46', type:'Académico',
-    x:300, z:260, w:150, d:110, h:90,
-    floors:4, loc:'Zona Sul do Campus',
-    hours:'Seg–Sex 07:00–20:00', contact:'(+258) 21 000 005',
-    rooms:['E101','E102','Lab Anatomia','Lab Biologia','E201','E202','E301','Sala Profs E'],
-    desc:'Medicina, Enfermagem e Saúde Pública'
+    color:'#10b981',colorDark:'#064e3b',type:'Académico',emoji:'🏥',
+    x:290,z:265,w:160,d:115,h:95, floors:4,
+    loc:'Zona Sul · Ala Médica',
+    hours:'Seg–Sáb  07:00–22:00',contact:'(+258) 21 491 005',
+    access:'Totalmente acessível',
+    rooms:['E101 – Anatomia','E102 – Fisiologia','Lab Anatomia','Lab Biologia','Lab Microbiologia','E201 – Enfermagem','E202 – Farmacologia','E301 – Clínica','Sala Professores E','Clínica Universitária'],
+    desc:'Medicina, Enfermagem, Farmácia e Saúde Pública.'
   },
   {
     id:'F', name:'Bloco F — Direito', short:'Bloco F',
-    color:'#ef4444', colorDark:'#991b1b', type:'Académico',
-    x:490, z:260, w:120, d:90, h:65,
-    floors:3, loc:'Zona Sul do Campus',
-    hours:'Seg–Sáb 07:00–18:00', contact:'(+258) 21 000 006',
-    rooms:['F101','F102','F103','Tribunal Simulado','F201','F202','Sala Profs F'],
-    desc:'Direito Público, Privado e Internacional'
+    color:'#ef4444',colorDark:'#7f1d1d',type:'Académico',emoji:'⚖️',
+    x:490,z:265,w:125,d:95,h:65, floors:3,
+    loc:'Zona Sul · Ala Jurídica',
+    hours:'Seg–Sáb  07:00–19:00',contact:'(+258) 21 491 006',
+    access:'Rampa + elevador',
+    rooms:['F101 – Dir. Público','F102 – Dir. Privado','F103 – Dir. Penal','F201 – Dir. Internasc.','F202 – Dir. Comercial','Tribunal Simulado','Sala Moots','Sala Professores F'],
+    desc:'Direito Público, Privado, Penal e Internacional.'
   },
   {
     id:'LIB', name:'Biblioteca Central', short:'Biblioteca',
-    color:'#6366f1', colorDark:'#3730a3', type:'Serviço',
-    x:300, z:185, w:90, d:60, h:45,
-    floors:2, loc:'Centro do Campus',
-    hours:'Seg–Sex 07:00–22:00 | Sáb 08:00–17:00', contact:'(+258) 21 000 010',
-    rooms:['Sala Leitura 1','Sala Leitura 2','Sala Silêncio','Acervo','Sala Multimédia','Recepção'],
-    desc:'Acervo com mais de 50.000 títulos'
+    color:'#6366f1',colorDark:'#1e1b4b',type:'Serviço',emoji:'📖',
+    x:295,z:192,w:100,d:62,h:48, floors:2,
+    loc:'Centro do Campus',
+    hours:'Seg–Sex  07:00–22:00 · Sáb  08:00–17:00',contact:'(+258) 21 491 010',
+    access:'Totalmente acessível + braille',
+    rooms:['Sala Leitura 1','Sala Leitura 2','Sala Silêncio','Sala Multimédia','Acervo Principal','Recepção','Sala de Estudo Grupo'],
+    desc:'Mais de 50 000 títulos físicos e 120 000 e-books. Wi-Fi de alta velocidade.'
   },
   {
     id:'ADM', name:'Secretaria & Administração', short:'Secretaria',
-    color:'#14b8a6', colorDark:'#0f766e', type:'Serviço',
-    x:120, z:185, w:80, d:55, h:40,
-    floors:2, loc:'Entrada Principal',
-    hours:'Seg–Sex 08:00–17:00', contact:'(+258) 21 000 000',
-    rooms:['Matrículas','Certidões','Tesouraria','Reitoria','Gabinete RH','Sala Reuniões'],
-    desc:'Serviços académicos e administrativos'
+    color:'#14b8a6',colorDark:'#134e4a',type:'Serviço',emoji:'🏛',
+    x:100,z:192,w:86,d:58,h:42, floors:2,
+    loc:'Entrada Principal · Bloco Central',
+    hours:'Seg–Sex  08:00–17:00',contact:'(+258) 21 491 000',
+    access:'Rampa + WC adaptado',
+    rooms:['Matrículas','Certidões','Tesouraria','Reitoria','Gabinete RH','Sala de Reuniões','Reprografia'],
+    desc:'Centro administrativo: matrículas, certidões, tesouraria e serviços ao estudante.'
   },
   {
     id:'CAN', name:'Cantina Universitária', short:'Cantina',
-    color:'#f97316', colorDark:'#c2410c', type:'Serviço',
-    x:490, z:185, w:100, d:60, h:30,
-    floors:1, loc:'Zona Central',
-    hours:'Seg–Sex 07:00–20:00 | Sáb 08:00–15:00', contact:'(+258) 21 000 020',
-    rooms:['Refeitório A','Refeitório B','Bar','Cozinha','Sala VIP'],
-    desc:'Refeições subsidiadas e cafetaria'
+    color:'#f97316',colorDark:'#7c2d12',type:'Serviço',emoji:'🍽',
+    x:490,z:190,w:108,d:65,h:32, floors:1,
+    loc:'Zona Central',
+    hours:'Seg–Sex  07:00–21:00 · Sáb  08:00–16:00',contact:'(+258) 21 491 020',
+    access:'Totalmente acessível',
+    rooms:['Refeitório A (300 lug.)','Refeitório B (150 lug.)','Bar & Café','Cozinha Industrial','Sala VIP','Zona Take-Away'],
+    desc:'Refeições subsidiadas para estudantes. Menu diário e opções vegetarianas.'
   },
   {
     id:'GYM', name:'Pavilhão Desportivo', short:'Pavilhão',
-    color:'#84cc16', colorDark:'#3f6212', type:'Desporto',
-    x:630, z:160, w:110, d:120, h:35,
-    floors:1, loc:'Zona Leste',
-    hours:'Seg–Sex 06:00–22:00 | Sáb 07:00–18:00', contact:'(+258) 21 000 030',
-    rooms:['Ginásio','Campo Basquete','Campo Voleibol','Balneários','Sala Musculação'],
-    desc:'Instalações desportivas e actividades físicas'
+    color:'#84cc16',colorDark:'#1a2e05',type:'Desporto',emoji:'⚽',
+    x:645,z:155,w:120,d:130,h:38, floors:1,
+    loc:'Zona Leste · Complexo Desportivo',
+    hours:'Seg–Sex  06:00–22:00 · Sáb  07:00–18:00',contact:'(+258) 21 491 030',
+    access:'Totalmente acessível',
+    rooms:['Ginásio Principal','Campo Basquetebol','Campo Voleibol','Campo Badmínton','Sala Musculação','Balneários','Gabinete Desporto'],
+    desc:'Complexo desportivo com ginásio, campos multidesportos e musculação.'
   },
   {
     id:'AUD', name:'Auditório Principal', short:'Auditório',
-    color:'#a855f7', colorDark:'#6b21a8', type:'Evento',
-    x:650, z:280, w:100, d:80, h:40,
-    floors:1, loc:'Zona Leste',
-    hours:'Conforme programação', contact:'(+258) 21 000 040',
-    rooms:['Palco','Sala VIP','Sala Imprensa','Camarins','Foyer'],
-    desc:'Capacidade para 800 pessoas'
+    color:'#a855f7',colorDark:'#3b0764',type:'Evento',emoji:'🎭',
+    x:650,z:310,w:110,d:88,h:44, floors:1,
+    loc:'Zona Leste',
+    hours:'Conforme programação',contact:'(+258) 21 491 040',
+    access:'Lugares reservados cadeiras de rodas · Loop magnético',
+    rooms:['Palco Principal','Sala VIP','Sala de Imprensa','Camarins A & B','Foyer','Sala Técnica','Cabine de Som'],
+    desc:'Capacidade para 800 pessoas. Palco de 200m² equipado com sistema de som e vídeo profissional.'
+  },
+  {
+    id:'LAB', name:'Centro de Investigação', short:'C. Investig.',
+    color:'#06b6d4',colorDark:'#083344',type:'Investigação',emoji:'🔭',
+    x:645,z:75,w:100,d:60,h:55, floors:2,
+    loc:'Zona Leste · Bloco Científico',
+    hours:'Seg–Sex  08:00–20:00',contact:'(+258) 21 491 050',
+    access:'Acesso controlado + rampa',
+    rooms:['Lab Nanotecnologia','Lab Impressão 3D','Lab Química Avançada','Sala Reuniões I&D','Sala Servidores HPC','Escritórios Investigadores'],
+    desc:'Centro de Investigação & Desenvolvimento. Parcerias com universidades internacionais.'
   },
 ];
- 
-const PATHS = [
-  {x1:120,z1:200,x2:630,z2:200},
-  {x1:310,z1:60,x2:310,z2:420},
-  {x1:120,z1:60,x2:650,z2:60},
-  {x1:120,z1:380,x2:650,z2:380},
-  {x1:650,z1:60,x2:650,z2:420},
-  {x1:120,z1:60,x2:120,z2:380},
+
+const PATHS=[
+  {x1:100,z1:213,x2:650,z2:213,w:14},
+  {x1:320,z1:55,x2:320,z2:430,w:14},
+  {x1:100,z1:55,x2:680,z2:55,w:10},
+  {x1:100,z1:390,x2:680,z2:390,w:10},
+  {x1:680,z1:55,x2:680,z2:430,w:10},
+  {x1:100,z1:55,x2:100,z2:390,w:10},
+  {x1:210,z1:213,x2:210,z2:55,w:8},
+  {x1:450,z1:213,x2:450,z2:55,w:8},
+  {x1:210,z1:213,x2:210,z2:390,w:8},
+  {x1:450,z1:213,x2:450,z2:390,w:8},
 ];
- 
-const TREES = [
-  {x:230,z:60},{x:410,z:60},{x:560,z:60},
-  {x:80,z:150},{x:80,z:310},
-  {x:600,z:150},{x:600,z:310},
-  {x:420,z:200},{x:200,z:200},
-  {x:230,z:380},{x:410,z:380},{x:560,z:380},
-  {x:680,z:220},{x:680,z:300},
+
+const TREES=[
+  {x:225,z:57},{x:350,z:57},{x:460,z:57},{x:580,z:57},
+  {x:70,z:140},{x:70,z:213},{x:70,z:310},
+  {x:620,z:140},{x:620,z:213},{x:620,z:310},
+  {x:225,z:390},{x:350,z:390},{x:460,z:390},{x:580,z:390},
+  {x:710,z:213},{x:710,z:280},{x:710,z:140},
+  {x:210,z:148},{x:450,z:148},{x:210,z:300},{x:450,z:300},
 ];
- 
-// ===================== CANVAS SETUP =====================
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-let W, H;
- 
-function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-  draw();
-}
-window.addEventListener('resize', resize);
- 
-// ===================== CAMERA =====================
-let cam = {
-  angleX: 0.52, angleY: 0.6,
-  zoom: 1.0,
-  tx: 0, tz: 0,
-  targetAngleX: 0.52, targetAngleY: 0.6,
-  targetZoom: 1.0,
+
+const BENCHES=[{x:220,z:195},{x:400,z:195},{x:220,z:230},{x:400,z:230}];
+const LAMPS=[{x:200,z:170},{x:340,z:170},{x:470,z:170},{x:200,z:250},{x:340,z:250},{x:470,z:250}];
+
+// ═══════════════════════════════════════════════
+//  CANVAS & CAMERA
+// ═══════════════════════════════════════════════
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let W,H;
+let dayMode=false;
+
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+window.addEventListener('resize',resize);
+resize();
+
+const cam={
+  ax:0.50,ay:0.58,zoom:1.0,
+  tax:0.50,tay:0.58,tzoom:1.0,
 };
- 
-const CX_WORLD = 390, CZ_WORLD = 220;
- 
-// ===================== INTERACTION =====================
-let drag = false, lastMX, lastMY;
- 
-canvas.addEventListener('mousedown', e => {
-  drag = true; lastMX = e.clientX; lastMY = e.clientY;
+const CX=385,CZ=223;
+
+// ═══════════════════════════════════════════════
+//  PROJECTION
+// ═══════════════════════════════════════════════
+function proj(x,y,z){
+  const rx=x-CX,rz=z-CZ;
+  const cy=Math.cos(cam.ay),sy=Math.sin(cam.ay);
+  const x2=rx*cy-rz*sy, z2=rx*sy+rz*cy;
+  const cx2=Math.cos(cam.ax),sx2=Math.sin(cam.ax);
+  const y2=y*cx2-z2*sx2, z3=y*sx2+z2*cx2;
+  const sc=cam.zoom,fov=750;
+  const sz=fov/(fov+z3);
+  return{sx:W/2+x2*sz*sc*1.35,sy:H/2+y2*sz*sc*1.35-40,sz:z3};
+}
+
+// ═══════════════════════════════════════════════
+//  INTERACTION
+// ═══════════════════════════════════════════════
+let drag=false,lmx=0,lmy=0;
+let hoverId=null,selectedId=null,routeId=null;
+let activeFloor='all';
+let acIdx=-1;
+
+canvas.addEventListener('mousedown',e=>{drag=true;lmx=e.clientX;lmy=e.clientY;canvas.style.cursor='grabbing';});
+window.addEventListener('mouseup',()=>{drag=false;canvas.style.cursor='default';});
+window.addEventListener('mousemove',e=>{
+  if(drag){
+    cam.tay+=(e.clientX-lmx)*0.007;
+    cam.tax+=(e.clientY-lmy)*0.006;
+    cam.tax=Math.max(0.18,Math.min(1.35,cam.tax));
+    lmx=e.clientX;lmy=e.clientY;
+  } else onHover(e);
 });
-window.addEventListener('mouseup', () => drag = false);
-window.addEventListener('mousemove', e => {
-  if (!drag) { handleHover(e); return; }
-  const dx = e.clientX - lastMX, dy = e.clientY - lastMY;
-  cam.targetAngleY += dx * 0.008;
-  cam.targetAngleX += dy * 0.006;
-  cam.targetAngleX = Math.max(0.2, Math.min(1.3, cam.targetAngleX));
-  lastMX = e.clientX; lastMY = e.clientY;
-});
-canvas.addEventListener('wheel', e => {
-  cam.targetZoom -= e.deltaY * 0.001;
-  cam.targetZoom = Math.max(0.4, Math.min(2.5, cam.targetZoom));
+canvas.addEventListener('wheel',e=>{
+  cam.tzoom-=e.deltaY*0.0008;
+  cam.tzoom=Math.max(0.35,Math.min(2.8,cam.tzoom));
   e.preventDefault();
-}, {passive:false});
- 
+},{passive:false});
+canvas.addEventListener('click',e=>{
+  const b=pick(e.clientX,e.clientY);
+  if(b){openPanel(b);}else closePanel();
+});
+
 // Touch
-let lastTouches = [];
-canvas.addEventListener('touchstart', e => { lastTouches = [...e.touches]; }, {passive:true});
-canvas.addEventListener('touchmove', e => {
-  if (e.touches.length === 1) {
-    const dx = e.touches[0].clientX - lastTouches[0].clientX;
-    const dy = e.touches[0].clientY - lastTouches[0].clientY;
-    cam.targetAngleY += dx * 0.01;
-    cam.targetAngleX += dy * 0.008;
-    cam.targetAngleX = Math.max(0.2, Math.min(1.3, cam.targetAngleX));
-  } else if (e.touches.length === 2) {
-    const prevDist = Math.hypot(lastTouches[1].clientX-lastTouches[0].clientX, lastTouches[1].clientY-lastTouches[0].clientY);
-    const curDist = Math.hypot(e.touches[1].clientX-e.touches[0].clientX, e.touches[1].clientY-e.touches[0].clientY);
-    cam.targetZoom *= curDist / prevDist;
-    cam.targetZoom = Math.max(0.4, Math.min(2.5, cam.targetZoom));
+let lt=[];
+canvas.addEventListener('touchstart',e=>{lt=[...e.touches];},{passive:true});
+canvas.addEventListener('touchmove',e=>{
+  if(e.touches.length===1){
+    cam.tay+=(e.touches[0].clientX-lt[0].clientX)*0.009;
+    cam.tax+=(e.touches[0].clientY-lt[0].clientY)*0.007;
+    cam.tax=Math.max(0.18,Math.min(1.35,cam.tax));
+  }else if(e.touches.length===2){
+    const pd=Math.hypot(lt[1].clientX-lt[0].clientX,lt[1].clientY-lt[0].clientY);
+    const cd=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
+    cam.tzoom*=cd/pd;cam.tzoom=Math.max(0.35,Math.min(2.8,cam.tzoom));
   }
-  lastTouches = [...e.touches];
-  e.preventDefault();
-}, {passive:false});
- 
-canvas.addEventListener('click', e => {
-  const b = pickBuilding(e.clientX, e.clientY);
-  if (b) openPanel(b);
-  else closePanel();
-});
- 
+  lt=[...e.touches];e.preventDefault();
+},{passive:false});
+
 // Controls
-document.getElementById('btn-zoom-in').onclick = () => { cam.targetZoom = Math.min(2.5, cam.targetZoom + 0.3); };
-document.getElementById('btn-zoom-out').onclick = () => { cam.targetZoom = Math.max(0.4, cam.targetZoom - 0.3); };
-document.getElementById('btn-reset').onclick = () => { cam.targetAngleX=0.52; cam.targetAngleY=0.6; cam.targetZoom=1.0; };
-document.getElementById('btn-top').onclick = () => { cam.targetAngleX=1.25; cam.targetZoom=0.9; };
- 
-// ===================== 3D PROJECTION =====================
-function project(x, y, z) {
-  const ax = cam.angleX, ay = cam.angleY;
-  const rx = x - CX_WORLD, rz = z - CZ_WORLD;
-  const cosY = Math.cos(ay), sinY = Math.sin(ay);
-  const x2 = rx * cosY - rz * sinY;
-  const z2 = rx * sinY + rz * cosY;
-  const cosX = Math.cos(ax), sinX = Math.sin(ax);
-  const y2 = y * cosX - z2 * sinX;
-  const z3 = y * sinX + z2 * cosX;
-  const scale = cam.zoom * 0.9;
-  const fov = 700;
-  const sz = fov / (fov + z3);
-  return { sx: W/2 + x2 * sz * scale * 1.3, sy: H/2 + y2 * sz * scale * 1.3 - 30, sz: z3 };
-}
- 
-// ===================== PICK =====================
-let hoverId = null, selectedId = null;
- 
-function pickBuilding(mx, my) {
-  for (let i = BUILDINGS.length-1; i >= 0; i--) {
-    const b = BUILDINGS[i];
-    const pts = getBuildingPoints(b);
-    if (ptInPoly(mx, my, pts.base.map(p => project(p.x, 0, p.z)))) return b;
-    if (ptInPoly(mx, my, pts.top.map(p => project(p.x, b.h, p.z)))) return b;
+document.getElementById('btn-zoom-in').onclick=()=>{cam.tzoom=Math.min(2.8,cam.tzoom+0.3);};
+document.getElementById('btn-zoom-out').onclick=()=>{cam.tzoom=Math.max(0.35,cam.tzoom-0.3);};
+document.getElementById('btn-reset').onclick=()=>{cam.tax=0.5;cam.tay=0.58;cam.tzoom=1.0;};
+document.getElementById('btn-top').onclick=()=>{cam.tax=1.3;cam.tzoom=0.8;showToast('Vista aérea ativada');};
+document.getElementById('btn-iso').onclick=()=>{cam.tax=0.6;cam.tay=0.785;cam.tzoom=1.0;showToast('Vista isométrica');};
+document.getElementById('btn-daynight').onclick=toggleDay;
+document.getElementById('btn-share').onclick=()=>{
+  navigator.clipboard?.writeText(location.href).then(()=>showToast('🔗 Link copiado!')).catch(()=>showToast('🔗 Copie o URL desta página'));
+};
+document.getElementById('btn-shortcuts').onclick=()=>document.getElementById('shortcuts-modal').classList.toggle('show');
+document.getElementById('shortcuts-modal').addEventListener('click',e=>{if(e.target===document.getElementById('shortcuts-modal'))document.getElementById('shortcuts-modal').classList.remove('show');});
+document.getElementById('compass').onclick=()=>{cam.tay=0.58;showToast('Norte reorientado');};
+
+// Keyboard
+window.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.key==='k'){e.preventDefault();document.getElementById('search-input').focus();}
+  if(e.key==='Escape'){closePanel();document.getElementById('shortcuts-modal').classList.remove('show');document.getElementById('search-input').blur();document.getElementById('autocomplete').style.display='none';}
+  if(e.key==='r'||e.key==='R'){cam.tax=0.5;cam.tay=0.58;cam.tzoom=1.0;}
+  if(e.key==='t'||e.key==='T'){cam.tax=1.3;cam.tzoom=0.8;}
+  if(e.key==='d'||e.key==='D')toggleDay();
+  if(e.key==='+'||e.key==='=')cam.tzoom=Math.min(2.8,cam.tzoom+0.25);
+  if(e.key==='-')cam.tzoom=Math.max(0.35,cam.tzoom-0.25);
+  if(e.key==='?')document.getElementById('shortcuts-modal').classList.toggle('show');
+  // Autocomplete keyboard nav
+  if(document.getElementById('autocomplete').style.display==='block'){
+    const items=document.querySelectorAll('.ac-item');
+    if(e.key==='ArrowDown'){acIdx=Math.min(acIdx+1,items.length-1);items.forEach((it,i)=>it.classList.toggle('active',i===acIdx));}
+    if(e.key==='ArrowUp'){acIdx=Math.max(acIdx-1,0);items.forEach((it,i)=>it.classList.toggle('active',i===acIdx));}
+    if(e.key==='Enter'&&acIdx>=0){items[acIdx]?.click();}
   }
-  return null;
+});
+
+function toggleDay(){
+  dayMode=!dayMode;
+  document.body.classList.toggle('day-mode',dayMode);
+  document.getElementById('btn-daynight').textContent=dayMode?'🌑':'🌙';
+  showToast(dayMode?'☀️ Modo dia activado':'🌙 Modo noite activado');
 }
- 
-function ptInPoly(mx, my, pts) {
-  let inside = false;
-  for (let i=0, j=pts.length-1; i<pts.length; j=i++) {
-    const xi=pts[i].sx, yi=pts[i].sy, xj=pts[j].sx, yj=pts[j].sy;
-    if (((yi>my)!==(yj>my)) && (mx < (xj-xi)*(my-yi)/(yj-yi)+xi)) inside = !inside;
+
+// ═══════════════════════════════════════════════
+//  PICK
+// ═══════════════════════════════════════════════
+function getBpts(b){
+  const{x,z,w,d}=b;
+  return [{x,z},{x:x+w,z},{x:x+w,z:z+d},{x,z:z+d}];
+}
+function ptInPoly(mx,my,pts){
+  let inside=false;
+  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const xi=pts[i].sx,yi=pts[i].sy,xj=pts[j].sx,yj=pts[j].sy;
+    if(((yi>my)!==(yj>my))&&(mx<(xj-xi)*(my-yi)/(yj-yi)+xi))inside=!inside;
   }
   return inside;
 }
- 
-function getBuildingPoints(b) {
-  const {x,z,w,d} = b;
-  return {
-    base: [{x,z},{x:x+w,z},{x:x+w,z:z+d},{x,z:z+d}],
-    top:  [{x,z},{x:x+w,z},{x:x+w,z:z+d},{x,z:z+d}],
-  };
+function pick(mx,my){
+  for(let i=BUILDINGS.length-1;i>=0;i--){
+    const b=BUILDINGS[i];
+    const tH=getVisibleH(b);
+    const bpts=getBpts(b);
+    if(ptInPoly(mx,my,bpts.map(p=>proj(p.x,0,p.z))))return b;
+    if(ptInPoly(mx,my,bpts.map(p=>proj(p.x,tH,p.z))))return b;
+  }
+  return null;
 }
- 
-function handleHover(e) {
-  const b = pickBuilding(e.clientX, e.clientY);
-  const tooltip = document.getElementById('tooltip');
-  if (b) {
-    hoverId = b.id;
-    canvas.style.cursor = 'pointer';
-    tooltip.style.display = 'block';
-    tooltip.style.left = (e.clientX + 14) + 'px';
-    tooltip.style.top = (e.clientY - 10) + 'px';
-    tooltip.innerHTML = `<strong>${b.short}</strong> · ${b.type} · ${b.floors} piso(s)`;
-  } else {
-    hoverId = null;
-    canvas.style.cursor = 'default';
-    tooltip.style.display = 'none';
+function getVisibleH(b){
+  const vf=activeFloor==='all'?b.floors:Math.min(parseInt(activeFloor),b.floors);
+  return(b.h/b.floors)*vf;
+}
+
+// ═══════════════════════════════════════════════
+//  HOVER
+// ═══════════════════════════════════════════════
+function onHover(e){
+  const b=pick(e.clientX,e.clientY);
+  const tt=document.getElementById('tooltip');
+  const tn=document.getElementById('tt-name');
+  const tm=document.getElementById('tt-meta');
+  if(b){
+    hoverId=b.id;canvas.style.cursor='pointer';
+    tt.style.display='block';
+    tt.style.left=(e.clientX+16)+'px';
+    tt.style.top=(e.clientY-8)+'px';
+    tn.textContent=b.emoji+' '+b.short;
+    tm.textContent=b.type+' · '+b.floors+' piso(s) · '+b.rooms.length+' salas';
+  }else{
+    hoverId=null;canvas.style.cursor='default';
+    tt.style.display='none';
   }
 }
- 
-// ===================== PANEL =====================
-function openPanel(b) {
-  selectedId = b.id;
-  document.getElementById('p-type').textContent = b.type;
-  document.getElementById('p-name').textContent = b.name;
-  document.getElementById('p-loc').textContent = b.loc;
-  document.getElementById('p-hours').textContent = b.hours;
-  document.getElementById('p-contact').textContent = b.contact;
-  document.getElementById('p-floors').textContent = `${b.floors} piso(s)`;
-  const roomsEl = document.getElementById('p-rooms');
-  roomsEl.innerHTML = b.rooms.map(r=>`<div class="room-chip">${r}</div>`).join('');
+
+// ═══════════════════════════════════════════════
+//  PANEL
+// ═══════════════════════════════════════════════
+function openPanel(b){
+  selectedId=b.id;
+  document.getElementById('panel-color-bar').style.background=b.color;
+  const badge=document.getElementById('p-badge');
+  badge.textContent=b.emoji+' '+b.type;
+  badge.style.background=b.color+'22';badge.style.color=b.color;badge.style.border='1px solid '+b.color+'44';
+  document.getElementById('p-name').textContent=b.name;
+  document.getElementById('p-subdesc').textContent=b.desc;
+  document.getElementById('ps-floors').textContent=b.floors;
+  document.getElementById('ps-rooms').textContent=b.rooms.length;
+  document.getElementById('p-loc').textContent=b.loc;
+  document.getElementById('p-hours').textContent=b.hours;
+  document.getElementById('p-contact').textContent=b.contact;
+  document.getElementById('p-access').textContent=b.access;
+  const rg=document.getElementById('p-rooms');
+  rg.innerHTML=b.rooms.map(r=>`<div class="room-chip">${r}</div>`).join('');
   document.getElementById('panel').classList.add('open');
 }
-function closePanel() {
-  selectedId = null;
-  document.getElementById('panel').classList.remove('open');
-}
-document.getElementById('close-panel').onclick = closePanel;
- 
-// ===================== LEGEND =====================
-const types = [...new Set(BUILDINGS.map(b=>b.type))];
-const typeColors = {};
-BUILDINGS.forEach(b => typeColors[b.type] = b.color);
-const leg = document.getElementById('legend');
-types.forEach(t => {
-  const el = document.createElement('div');
-  el.className = 'leg-item';
-  el.innerHTML = `<div class="leg-box" style="background:${typeColors[t]}"></div><span class="leg-label">${t}</span>`;
+function closePanel(){selectedId=null;document.getElementById('panel').classList.remove('open');}
+document.getElementById('close-panel').onclick=closePanel;
+document.getElementById('btn-navigate').onclick=()=>{
+  const b=BUILDINGS.find(x=>x.id===selectedId);
+  if(!b)return;
+  routeId=b.id;
+  document.getElementById('route-text').textContent='Navegar para '+b.short;
+  document.getElementById('route-banner').classList.add('show');
+  showToast('🧭 Rota activada para '+b.short);
+};
+document.getElementById('route-cancel').onclick=()=>{
+  routeId=null;
+  document.getElementById('route-banner').classList.remove('show');
+};
+
+// ═══════════════════════════════════════════════
+//  LEGEND
+// ═══════════════════════════════════════════════
+const types=[...new Set(BUILDINGS.map(b=>b.type))];
+const typeColors={};
+BUILDINGS.forEach(b=>{typeColors[b.type]=b.color;});
+const leg=document.getElementById('legend');
+let filterType=null;
+types.forEach(t=>{
+  const cnt=BUILDINGS.filter(b=>b.type===t).length;
+  const el=document.createElement('div');el.className='leg-item';
+  el.innerHTML=`<div class="leg-box" style="background:${typeColors[t]}"></div><span class="leg-label">${t}</span><span class="leg-count">${cnt}</span>`;
+  el.onclick=()=>{
+    filterType=(filterType===t)?null:t;
+    document.querySelectorAll('.leg-item').forEach(li=>li.classList.toggle('dimmed',filterType&&li!==el));
+    if(!filterType)document.querySelectorAll('.leg-item').forEach(li=>li.classList.remove('dimmed'));
+  };
   leg.appendChild(el);
 });
- 
-// ===================== FLOOR SELECTOR =====================
-const floorSel = document.getElementById('floor-sel');
-let activeFloor = 'all';
-const maxFloors = Math.max(...BUILDINGS.map(b=>b.floors));
-const allBtn = document.createElement('button');
-allBtn.className = 'floor-btn active';
-allBtn.textContent = 'ALL';
-allBtn.onclick = () => { activeFloor='all'; document.querySelectorAll('.floor-btn').forEach(b=>b.classList.remove('active')); allBtn.classList.add('active'); };
-floorSel.appendChild(allBtn);
-for (let f=1; f<=maxFloors; f++) {
-  const fb = document.createElement('button');
-  fb.className = 'floor-btn';
-  fb.textContent = f;
-  fb.dataset.floor = f;
-  fb.onclick = () => {
-    activeFloor = f;
-    document.querySelectorAll('.floor-btn').forEach(b=>b.classList.remove('active'));
-    fb.classList.add('active');
-  };
-  floorSel.appendChild(fb);
+
+// ═══════════════════════════════════════════════
+//  FLOOR SELECTOR
+// ═══════════════════════════════════════════════
+const fs=document.getElementById('floor-sel');
+const allBtn=document.createElement('button');
+allBtn.className='floor-btn active';allBtn.textContent='∞';
+allBtn.onclick=()=>{activeFloor='all';document.querySelectorAll('.floor-btn').forEach(b=>b.classList.remove('active'));allBtn.classList.add('active');};
+fs.appendChild(allBtn);
+const maxF=Math.max(...BUILDINGS.map(b=>b.floors));
+for(let f=1;f<=maxF;f++){
+  const fb=document.createElement('button');fb.className='floor-btn';fb.textContent=f;
+  fb.onclick=()=>{activeFloor=f;document.querySelectorAll('.floor-btn').forEach(b=>b.classList.remove('active'));fb.classList.add('active');showToast('Piso '+f+' seleccionado');};
+  fs.appendChild(fb);
 }
- 
-// ===================== SEARCH =====================
-const searchInput = document.getElementById('search-input');
-const acEl = document.getElementById('autocomplete');
- 
-searchInput.addEventListener('input', () => {
-  const q = searchInput.value.toLowerCase().trim();
-  if (!q) { acEl.style.display='none'; return; }
-  const matches = [];
-  BUILDINGS.forEach(b => {
-    if (b.name.toLowerCase().includes(q) || b.type.toLowerCase().includes(q)) matches.push({b, room:null});
-    b.rooms.forEach(r => { if (r.toLowerCase().includes(q)) matches.push({b, room:r}); });
+
+// ═══════════════════════════════════════════════
+//  SEARCH
+// ═══════════════════════════════════════════════
+const si=document.getElementById('search-input');
+const ac=document.getElementById('autocomplete');
+const sc=document.getElementById('search-clear');
+
+si.addEventListener('input',()=>{
+  acIdx=-1;
+  const q=si.value.toLowerCase().trim();
+  sc.classList.toggle('show',q.length>0);
+  if(!q){ac.style.display='none';return;}
+  const bMatches=[],rMatches=[];
+  BUILDINGS.forEach(b=>{
+    if(b.name.toLowerCase().includes(q)||b.type.toLowerCase().includes(q)||b.short.toLowerCase().includes(q))
+      bMatches.push({b,room:null});
+    b.rooms.forEach(r=>{if(r.toLowerCase().includes(q))rMatches.push({b,room:r});});
   });
-  if (!matches.length) { acEl.style.display='none'; return; }
-  acEl.innerHTML = matches.slice(0,8).map(({b,room}) => `
-    <div class="ac-item" data-id="${b.id}">
-      <div class="ac-dot" style="background:${b.color}"></div>
-      <div class="ac-info">
-        <div class="ac-name">${room ? room : b.short}</div>
-        <div class="ac-desc">${room ? b.short : b.desc}</div>
-      </div>
-    </div>
-  `).join('');
-  acEl.style.display='block';
-  acEl.querySelectorAll('.ac-item').forEach(el => {
-    el.onclick = () => {
-      const b = BUILDINGS.find(x=>x.id===el.dataset.id);
-      if (b) { openPanel(b); selectedId=b.id; }
-      acEl.style.display='none';
-      searchInput.value='';
+  if(!bMatches.length&&!rMatches.length){ac.style.display='none';return;}
+  let html='';
+  if(bMatches.length)html+=`<div class="ac-section">Blocos</div>`+bMatches.slice(0,4).map(({b})=>`<div class="ac-item" data-id="${b.id}"><div class="ac-dot" style="background:${b.color}"></div><div><div class="ac-name">${b.emoji} ${b.short}</div><div class="ac-desc">${b.desc.substring(0,55)}…</div></div><span class="ac-kbd">↵</span></div>`).join('');
+  if(rMatches.length)html+=`<div class="ac-section">Salas</div>`+rMatches.slice(0,5).map(({b,room})=>`<div class="ac-item" data-id="${b.id}"><div class="ac-dot" style="background:${b.color}"></div><div><div class="ac-name">${room}</div><div class="ac-desc">${b.short}</div></div></div>`).join('');
+  ac.innerHTML=html;ac.style.display='block';
+  ac.querySelectorAll('.ac-item').forEach(el=>{
+    el.onclick=()=>{
+      const b=BUILDINGS.find(x=>x.id===el.dataset.id);
+      if(b){openPanel(b);selectedId=b.id;}
+      ac.style.display='none';si.value='';sc.classList.remove('show');
     };
   });
 });
-document.addEventListener('click', e => { if (!e.target.closest('#search-bar') && !e.target.closest('#autocomplete')) acEl.style.display='none'; });
- 
-// ===================== DRAWING =====================
-function drawGround() {
-  // Ground grid
+sc.onclick=()=>{si.value='';ac.style.display='none';sc.classList.remove('show');si.focus();};
+document.addEventListener('click',e=>{if(!e.target.closest('#search-wrap'))ac.style.display='none';});
+
+// ═══════════════════════════════════════════════
+//  CLOCK & WEATHER
+// ═══════════════════════════════════════════════
+function updateClock(){
+  const now=new Date();
+  document.getElementById('time-clock').textContent=now.toLocaleTimeString('pt-MZ');
+  document.getElementById('time-date').textContent=now.toLocaleDateString('pt-MZ',{weekday:'short',day:'2-digit',month:'short'});
+  const h=now.getHours();
+  const open=h>=6&&h<22;
+  document.getElementById('sdot').className='status-dot'+(open?' open':'');
+  document.getElementById('stext').textContent=open?'Campus Aberto':'Campus Fechado';
+}
+updateClock();setInterval(updateClock,1000);
+
+// Simulated weather (Maputo)
+const weathers=[
+  {icon:'☀️',temp:28,desc:'Ensolarado'},
+  {icon:'⛅',temp:25,desc:'Parcialmente nublado'},
+  {icon:'🌤',temp:27,desc:'Maioritariamente sol'},
+];
+const wdata=weathers[Math.floor(Math.random()*weathers.length)];
+document.getElementById('weather-icon').textContent=wdata.icon;
+document.getElementById('weather-temp').textContent=wdata.temp+'°C';
+document.getElementById('weather-desc').textContent='Maputo · '+wdata.desc;
+
+// ═══════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+function lerp(a,b,t){return a+(b-a)*t;}
+function hexToRgb(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return{r,g,b};}
+function adjustHex(hex,amt){
+  if(!hex||!hex.startsWith('#'))return hex;
+  const{r,g,b}=hexToRgb(hex);
+  return`rgb(${Math.min(255,Math.max(0,r+amt))},${Math.min(255,Math.max(0,g+amt))},${Math.min(255,Math.max(0,b+amt))})`;
+}
+function hexA(hex,a){const{r,g,b}=hexToRgb(hex);return`rgba(${r},${g},${b},${a})`;}
+
+// ═══════════════════════════════════════════════
+//  DRAW GROUND
+// ═══════════════════════════════════════════════
+function drawGround(){
+  // Base ground plane
+  const corners=[{x:0,z:0},{x:780,z:0},{x:780,z:450},{x:0,z:450}];
+  ctx.beginPath();
+  corners.forEach((c,i)=>{const p=proj(c.x,-1,c.z);i===0?ctx.moveTo(p.sx,p.sy):ctx.lineTo(p.sx,p.sy);});
+  ctx.closePath();
+  if(dayMode){ctx.fillStyle='#c8d5e8';}
+  else{const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,600);g.addColorStop(0,'#0f1a2e');g.addColorStop(1,'#080c18');ctx.fillStyle=g;}
+  ctx.fill();
+
+  // Grid
   ctx.save();
-  for (let gx = 0; gx <= 800; gx += 40) {
-    const a = project(gx, 0, 0), b = project(gx, 0, 450);
-    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 0.5; ctx.stroke();
+  for(let gx=0;gx<=780;gx+=50){
+    const a=proj(gx,0,0),b=proj(gx,0,450);
+    ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);
+    ctx.strokeStyle=dayMode?'rgba(0,0,0,0.06)':'rgba(255,255,255,0.04)';ctx.lineWidth=.5;ctx.stroke();
   }
-  for (let gz = 0; gz <= 450; gz += 40) {
-    const a = project(0, 0, gz), b = project(800, 0, gz);
-    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 0.5; ctx.stroke();
+  for(let gz=0;gz<=450;gz+=50){
+    const a=proj(0,0,gz),b=proj(780,0,gz);
+    ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);
+    ctx.strokeStyle=dayMode?'rgba(0,0,0,0.06)':'rgba(255,255,255,0.04)';ctx.lineWidth=.5;ctx.stroke();
   }
   ctx.restore();
 }
- 
-function drawPaths() {
-  PATHS.forEach(p => {
-    const a = project(p.x1, 0.5, p.z1), b = project(p.x2, 0.5, p.z2);
-    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 6; ctx.lineCap='round'; ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 12; ctx.stroke();
-  });
-}
- 
-function drawTree(x, z) {
-  const base = project(x, 0, z);
-  const top = project(x, 22, z);
-  // trunk
-  ctx.beginPath();
-  ctx.moveTo(base.sx, base.sy);
-  ctx.lineTo(top.sx, top.sy);
-  ctx.strokeStyle = '#92400e'; ctx.lineWidth = 2; ctx.stroke();
-  // canopy
-  const r = Math.max(3, 10 * cam.zoom);
-  ctx.beginPath();
-  ctx.arc(top.sx, top.sy, r, 0, Math.PI*2);
-  ctx.fillStyle = 'rgba(34,197,94,0.7)'; ctx.fill();
-  ctx.beginPath();
-  ctx.arc(top.sx-r*0.3, top.sy-r*0.3, r*0.7, 0, Math.PI*2);
-  ctx.fillStyle = 'rgba(74,222,128,0.5)'; ctx.fill();
-}
- 
-function drawBuilding(b) {
-  const floorHeight = b.h / b.floors;
-  const visibleFloors = activeFloor==='all' ? b.floors : Math.min(parseInt(activeFloor), b.floors);
-  const totalH = floorHeight * visibleFloors;
- 
-  const isHovered = hoverId === b.id;
-  const isSelected = selectedId === b.id;
-  const alpha = (activeFloor==='all') ? 1 : (b.floors >= parseInt(activeFloor) ? 1 : 0.25);
- 
-  const {x,z,w,d} = b;
-  ctx.globalAlpha = alpha;
- 
-  // Ground shadow
-  const corners = [{x,z},{x:x+w,z},{x:x+w,z:z+d},{x,z:z+d}];
-  ctx.beginPath();
-  corners.forEach((c,i) => {
-    const p = project(c.x+4, -2, c.z+4);
-    i===0 ? ctx.moveTo(p.sx,p.sy) : ctx.lineTo(p.sx,p.sy);
-  });
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
- 
-  // --- Draw floors ---
-  for (let f = 0; f < visibleFloors; f++) {
-    const y0 = f * floorHeight;
-    const y1 = y0 + floorHeight;
-    const frac = f / b.floors;
-    const isTopFloor = (f === visibleFloors - 1);
- 
-    // Front face (z+d side)
-    const fl = project(x,   y0, z+d), fr = project(x+w, y0, z+d);
-    const tl = project(x,   y1, z+d), tr = project(x+w, y1, z+d);
- 
-    // Side face (x+w side)
-    const sfr = project(x+w, y0, z),   sfb = project(x+w, y0, z+d);
-    const str = project(x+w, y1, z),   stb = project(x+w, y1, z+d);
- 
-    // Color per floor
-    const shade = frac * 0.35;
-    const baseColor = b.color;
-    const darkColor = b.colorDark;
- 
-    // Front
-    ctx.beginPath(); ctx.moveTo(fl.sx,fl.sy); ctx.lineTo(fr.sx,fr.sy); ctx.lineTo(tr.sx,tr.sy); ctx.lineTo(tl.sx,tl.sy); ctx.closePath();
-    const frontGrad = ctx.createLinearGradient(fl.sx, fl.sy, tl.sx, tl.sy);
-    frontGrad.addColorStop(0, adjustColor(darkColor, -shade*30));
-    frontGrad.addColorStop(1, adjustColor(baseColor, shade*10));
-    ctx.fillStyle = frontGrad; ctx.fill();
-    // Floor line
-    ctx.beginPath(); ctx.moveTo(fl.sx,fl.sy); ctx.lineTo(fr.sx,fr.sy);
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth=0.5; ctx.stroke();
- 
-    // Windows on front
-    if (cam.zoom > 0.6 && !isTopFloor) {
-      const wCount = Math.max(1, Math.floor(w/35));
-      for (let wi=0; wi<wCount; wi++) {
-        const wfrac = (wi+0.5)/wCount;
-        const wx1 = lerp(x, x+w, wfrac-0.1);
-        const wx2 = lerp(x, x+w, wfrac+0.1);
-        const wy1 = y0 + floorHeight*0.25, wy2 = y0 + floorHeight*0.75;
-        const wp1 = project(wx1, wy1, z+d+0.1), wp2 = project(wx2, wy1, z+d+0.1);
-        const wp3 = project(wx2, wy2, z+d+0.1), wp4 = project(wx1, wy2, z+d+0.1);
-        ctx.beginPath(); ctx.moveTo(wp1.sx,wp1.sy); ctx.lineTo(wp2.sx,wp2.sy); ctx.lineTo(wp3.sx,wp3.sy); ctx.lineTo(wp4.sx,wp4.sy); ctx.closePath();
-        ctx.fillStyle = (isHovered||isSelected) ? 'rgba(255,250,200,0.6)' : 'rgba(180,220,255,0.2)'; ctx.fill();
-        ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=0.5; ctx.stroke();
+
+// ═══════════════════════════════════════════════
+//  DRAW PATHS
+// ═══════════════════════════════════════════════
+function drawPaths(){
+  PATHS.forEach(p=>{
+    const a=proj(p.x1,.5,p.z1),b=proj(p.x2,.5,p.z2);
+    // Shadow
+    ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);
+    ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=(p.w||10)*cam.zoom*.8+4;ctx.lineCap='round';ctx.stroke();
+    // Main
+    ctx.strokeStyle=dayMode?'rgba(200,215,235,1)':'rgba(30,50,90,1)';ctx.lineWidth=(p.w||10)*cam.zoom*.8;ctx.stroke();
+    // Center stripe
+    ctx.strokeStyle=dayMode?'rgba(180,195,215,0.6)':'rgba(255,255,255,0.06)';ctx.lineWidth=1;ctx.setLineDash([8,12]);ctx.stroke();ctx.setLineDash([]);
+
+    // Route highlight
+    if(routeId){
+      const b2=BUILDINGS.find(x=>x.id===routeId);
+      if(b2){
+        ctx.strokeStyle=`rgba(0,229,160,${.4+.3*Math.sin(Date.now()/300)})`;
+        ctx.lineWidth=3;ctx.setLineDash([6,8]);ctx.stroke();ctx.setLineDash([]);
       }
     }
- 
-    // Side
-    ctx.beginPath(); ctx.moveTo(sfb.sx,sfb.sy); ctx.lineTo(sfr.sx,sfr.sy); ctx.lineTo(str.sx,str.sy); ctx.lineTo(stb.sx,stb.sy); ctx.closePath();
-    const sideGrad = ctx.createLinearGradient(sfr.sx, sfr.sy, str.sx, str.sy);
-    sideGrad.addColorStop(0, adjustColor(darkColor, -shade*50));
-    sideGrad.addColorStop(1, adjustColor(darkColor, shade*5));
-    ctx.fillStyle = sideGrad; ctx.fill();
-    ctx.beginPath(); ctx.moveTo(sfb.sx,sfb.sy); ctx.lineTo(sfr.sx,sfr.sy);
-    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.5; ctx.stroke();
-  }
- 
-  // TOP FACE
-  const topCorners = [{x,z},{x:x+w,z},{x:x+w,z:z+d},{x,z:z+d}];
-  ctx.beginPath();
-  topCorners.forEach((c,i) => {
-    const p = project(c.x, totalH, c.z);
-    i===0 ? ctx.moveTo(p.sx,p.sy) : ctx.lineTo(p.sx,p.sy);
   });
-  ctx.closePath();
-  const topGrad = ctx.createRadialGradient(
-    project(x+w/2,totalH,z+d/2).sx, project(x+w/2,totalH,z+d/2).sy, 0,
-    project(x+w/2,totalH,z+d/2).sx, project(x+w/2,totalH,z+d/2).sy, 60
-  );
-  topGrad.addColorStop(0, lighten(b.color, 30));
-  topGrad.addColorStop(1, b.color);
-  ctx.fillStyle = topGrad; ctx.fill();
- 
-  // Outline if selected/hovered
-  if (isSelected || isHovered) {
-    const allFaces = [
-      [project(x,0,z+d),project(x+w,0,z+d),project(x+w,totalH,z+d),project(x,totalH,z+d)],
-      [project(x+w,0,z),project(x+w,0,z+d),project(x+w,totalH,z+d),project(x+w,totalH,z)],
-      topCorners.map(c=>project(c.x,totalH,c.z)),
-    ];
-    allFaces.forEach(face => {
-      ctx.beginPath();
-      face.forEach((p,i) => i===0 ? ctx.moveTo(p.sx,p.sy) : ctx.lineTo(p.sx,p.sy));
-      ctx.closePath();
-      ctx.strokeStyle = isSelected ? b.color : 'rgba(255,255,255,0.5)';
-      ctx.lineWidth = isSelected ? 2.5 : 1.5;
-      ctx.stroke();
-    });
-    if (isSelected) {
-      const topC = project(x+w/2, totalH+8, z+d/2);
-      ctx.beginPath();
-      ctx.arc(topC.sx, topC.sy, 5, 0, Math.PI*2);
-      ctx.fillStyle = b.color; ctx.fill();
-      ctx.beginPath();
-      ctx.arc(topC.sx, topC.sy, 9, 0, Math.PI*2);
-      ctx.strokeStyle = b.color; ctx.lineWidth=2; ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════
+//  DRAW TREE
+// ═══════════════════════════════════════════════
+function drawTree(x,z){
+  if(cam.zoom<0.45)return;
+  const base=proj(x,0,z),top=proj(x,18,z);
+  ctx.beginPath();ctx.moveTo(base.sx,base.sy);ctx.lineTo(top.sx,top.sy);
+  ctx.strokeStyle=dayMode?'#8B6914':'#5c3d0a';ctx.lineWidth=2;ctx.stroke();
+  const r=Math.max(4,9*cam.zoom);
+  // Shadow canopy
+  ctx.beginPath();ctx.arc(top.sx+2,top.sy+2,r,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,0.2)';ctx.fill();
+  // Main canopy
+  ctx.beginPath();ctx.arc(top.sx,top.sy,r,0,Math.PI*2);
+  ctx.fillStyle=dayMode?'rgba(34,140,60,.85)':'rgba(22,101,52,.85)';ctx.fill();
+  ctx.beginPath();ctx.arc(top.sx-r*.3,top.sy-r*.3,r*.65,0,Math.PI*2);
+  ctx.fillStyle=dayMode?'rgba(74,200,100,.7)':'rgba(34,197,94,.5)';ctx.fill();
+}
+
+// ═══════════════════════════════════════════════
+//  DRAW BENCH
+// ═══════════════════════════════════════════════
+function drawBench(x,z){
+  if(cam.zoom<0.6)return;
+  const p=proj(x,1,z);
+  ctx.fillStyle=dayMode?'#a0856a':'#6b4c30';
+  ctx.fillRect(p.sx-8,p.sy-2,16,4);
+}
+
+// ═══════════════════════════════════════════════
+//  DRAW LAMP
+// ═══════════════════════════════════════════════
+function drawLamp(x,z){
+  if(cam.zoom<0.55)return;
+  const base=proj(x,0,z),top=proj(x,14,z);
+  ctx.beginPath();ctx.moveTo(base.sx,base.sy);ctx.lineTo(top.sx,top.sy);
+  ctx.strokeStyle=dayMode?'#607080':'#8090a0';ctx.lineWidth=1.5;ctx.stroke();
+  // Glow at night
+  if(!dayMode){
+    const g=ctx.createRadialGradient(top.sx,top.sy,0,top.sx,top.sy,18);
+    g.addColorStop(0,'rgba(255,230,100,0.25)');g.addColorStop(1,'rgba(255,230,100,0)');
+    ctx.beginPath();ctx.arc(top.sx,top.sy,18,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+  }
+  ctx.beginPath();ctx.arc(top.sx,top.sy,3,0,Math.PI*2);
+  ctx.fillStyle=dayMode?'#c0c0c0':'#ffe066';ctx.fill();
+}
+
+// ═══════════════════════════════════════════════
+//  DRAW BUILDING
+// ═══════════════════════════════════════════════
+let time=0;
+function drawBuilding(b){
+  const fh=b.h/b.floors;
+  const vf=activeFloor==='all'?b.floors:Math.min(parseInt(activeFloor),b.floors);
+  const totalH=fh*vf;
+  const isH=hoverId===b.id,isSel=selectedId===b.id,isRte=routeId===b.id;
+  const typeMatch=!filterType||(filterType===b.type);
+  let alpha=typeMatch?1:0.15;
+
+  ctx.globalAlpha=alpha;
+
+  const{x,z,w,d}=b;
+  const corners=[{x,z},{x:x+w,z},{x:x+w,z:z+d},{x,z:z+d}];
+
+  // Ground shadow
+  ctx.beginPath();
+  corners.forEach((c,i)=>{const p=proj(c.x+5,-1,c.z+5);i===0?ctx.moveTo(p.sx,p.sy):ctx.lineTo(p.sx,p.sy);});
+  ctx.closePath();ctx.fillStyle='rgba(0,0,0,0.25)';ctx.fill();
+
+  // Draw each floor
+  for(let f=0;f<vf;f++){
+    const y0=f*fh,y1=y0+fh;
+    const frac=f/b.floors;
+
+    // Front face (z+d wall)
+    const fl=proj(x,y0,z+d),fr=proj(x+w,y0,z+d);
+    const tl=proj(x,y1,z+d),tr=proj(x+w,y1,z+d);
+
+    ctx.beginPath();ctx.moveTo(fl.sx,fl.sy);ctx.lineTo(fr.sx,fr.sy);ctx.lineTo(tr.sx,tr.sy);ctx.lineTo(tl.sx,tl.sy);ctx.closePath();
+    const fg=ctx.createLinearGradient(fl.sx,(fl.sy+tl.sy)/2,tr.sx,(fr.sy+tr.sy)/2);
+    const shade=frac*40;
+    fg.addColorStop(0,adjustHex(b.color,-20-shade));
+    fg.addColorStop(.5,adjustHex(b.color,-10-shade));
+    fg.addColorStop(1,adjustHex(b.colorDark,-10+shade));
+    ctx.fillStyle=fg;ctx.fill();
+    ctx.beginPath();ctx.moveTo(fl.sx,fl.sy);ctx.lineTo(fr.sx,fr.sy);
+    ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=.6;ctx.stroke();
+
+    // Windows – front
+    if(cam.zoom>0.55){
+      const wn=Math.max(1,Math.floor(w/38));
+      const wh_frac=0.22,wh2_frac=0.78;
+      for(let wi=0;wi<wn;wi++){
+        const wfr=(wi+.5)/wn;
+        const wx1=x+w*(wfr-.1),wx2=x+w*(wfr+.1);
+        const wp1=proj(wx1,y0+fh*wh_frac,z+d+.1),wp2=proj(wx2,y0+fh*wh_frac,z+d+.1);
+        const wp3=proj(wx2,y0+fh*wh2_frac,z+d+.1),wp4=proj(wx1,y0+fh*wh2_frac,z+d+.1);
+        ctx.beginPath();ctx.moveTo(wp1.sx,wp1.sy);ctx.lineTo(wp2.sx,wp2.sy);ctx.lineTo(wp3.sx,wp3.sy);ctx.lineTo(wp4.sx,wp4.sy);ctx.closePath();
+        const wlit=!dayMode&&Math.random()>.35;
+        ctx.fillStyle=(isH||isSel)?'rgba(255,248,180,.55)':wlit?`rgba(255,240,150,${.15+.1*Math.sin(time/60+wi)})`:dayMode?'rgba(120,160,200,.4)':'rgba(80,120,180,.2)';
+        ctx.fill();ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=.4;ctx.stroke();
+      }
+    }
+
+    // Side face (x+w wall)
+    const sr=proj(x+w,y0,z),sb=proj(x+w,y0,z+d);
+    const str2=proj(x+w,y1,z),stb=proj(x+w,y1,z+d);
+    ctx.beginPath();ctx.moveTo(sb.sx,sb.sy);ctx.lineTo(sr.sx,sr.sy);ctx.lineTo(str2.sx,str2.sy);ctx.lineTo(stb.sx,stb.sy);ctx.closePath();
+    const sg=ctx.createLinearGradient(sr.sx,sr.sy,str2.sx,str2.sy);
+    sg.addColorStop(0,adjustHex(b.colorDark,-30-shade));
+    sg.addColorStop(1,adjustHex(b.colorDark,10-shade));
+    ctx.fillStyle=sg;ctx.fill();
+    ctx.beginPath();ctx.moveTo(sb.sx,sb.sy);ctx.lineTo(sr.sx,sr.sy);
+    ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=.5;ctx.stroke();
+
+    // Windows – side
+    if(cam.zoom>0.7&&w>50){
+      const sn=Math.max(1,Math.floor(d/38));
+      for(let si=0;si<sn;si++){
+        const sfr=(si+.5)/sn;
+        const sz1=z+d*(sfr-.1),sz2=z+d*(sfr+.1);
+        const wp1=proj(x+w+.1,y0+fh*.22,sz1),wp2=proj(x+w+.1,y0+fh*.22,sz2);
+        const wp3=proj(x+w+.1,y0+fh*.78,sz2),wp4=proj(x+w+.1,y0+fh*.78,sz1);
+        ctx.beginPath();ctx.moveTo(wp1.sx,wp1.sy);ctx.lineTo(wp2.sx,wp2.sy);ctx.lineTo(wp3.sx,wp3.sy);ctx.lineTo(wp4.sx,wp4.sy);ctx.closePath();
+        ctx.fillStyle=dayMode?'rgba(100,140,180,.3)':'rgba(60,100,160,.18)';ctx.fill();
+      }
     }
   }
- 
-  // Label on top
-  if (cam.zoom > 0.55) {
-    const labelPos = project(x+w/2, totalH + 5, z+d/2);
+
+  // TOP FACE
+  ctx.beginPath();
+  corners.forEach((c,i)=>{const p=proj(c.x,totalH,c.z);i===0?ctx.moveTo(p.sx,p.sy):ctx.lineTo(p.sx,p.sy);});
+  ctx.closePath();
+  const tc=proj(x+w/2,totalH,z+d/2);
+  const tr=ctx.createRadialGradient(tc.sx,tc.sy,0,tc.sx,tc.sy,Math.max(w,d)*cam.zoom*.5);
+  tr.addColorStop(0,adjustHex(b.color,40));
+  tr.addColorStop(.6,adjustHex(b.color,15));
+  tr.addColorStop(1,b.color);
+  ctx.fillStyle=tr;ctx.fill();
+
+  // Roof details
+  if(cam.zoom>.65&&vf===b.floors){
+    // Rooftop rim
+    ctx.beginPath();
+    corners.forEach((c,i)=>{const p=proj(c.x,totalH,c.z);i===0?ctx.moveTo(p.sx,p.sy):ctx.lineTo(p.sx,p.sy);});
+    ctx.closePath();ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=1.2;ctx.stroke();
+    // AC units / rooftop structures (simple boxes)
+    if(cam.zoom>.85){
+      [[x+w*.15,z+d*.2,.12,.12,4],[x+w*.7,z+d*.15,.1,.1,4]].forEach(([bx,bz,bw,bd,bh])=>{
+        const bc=proj(bx,totalH,bz);
+        ctx.fillStyle=adjustHex(b.color,-20);
+        ctx.fillRect(bc.sx-4,bc.sy-3,8,5);
+      });
+    }
+  }
+
+  // Glow / selection outline
+  if(isSel||isH||isRte){
+    const faces=[
+      [proj(x,0,z+d),proj(x+w,0,z+d),proj(x+w,totalH,z+d),proj(x,totalH,z+d)],
+      [proj(x+w,0,z),proj(x+w,0,z+d),proj(x+w,totalH,z+d),proj(x+w,totalH,z)],
+      corners.map(c=>proj(c.x,totalH,c.z)),
+    ];
+    faces.forEach(face=>{
+      ctx.beginPath();face.forEach((p,i)=>i===0?ctx.moveTo(p.sx,p.sy):ctx.lineTo(p.sx,p.sy));ctx.closePath();
+      if(isRte){
+        ctx.strokeStyle=`rgba(0,229,160,${.6+.3*Math.sin(time/20)})`;
+        ctx.lineWidth=2.5;
+      } else if(isSel){
+        ctx.strokeStyle=b.color;ctx.lineWidth=2.2;
+      } else {
+        ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=1.3;
+      }
+      ctx.stroke();
+    });
+    // Selection beacon
+    if(isSel){
+      const bp=proj(x+w/2,totalH+16,z+d/2);
+      const pulse=Math.sin(time/18)*4;
+      ctx.beginPath();ctx.arc(bp.sx,bp.sy,10+pulse,0,Math.PI*2);
+      ctx.fillStyle=hexA(b.color,.15);ctx.fill();
+      ctx.beginPath();ctx.arc(bp.sx,bp.sy,5,0,Math.PI*2);
+      ctx.fillStyle=b.color;ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(bp.sx,bp.sy);
+      const pinBot=proj(x+w/2,totalH,z+d/2);
+      ctx.lineTo(pinBot.sx,pinBot.sy);
+      ctx.strokeStyle=hexA(b.color,.5);ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
+    }
+  }
+
+  // Label
+  if(cam.zoom>0.5&&(alpha>0.5)){
+    const lp=proj(x+w/2,totalH+6,z+d/2);
     ctx.save();
-    ctx.globalAlpha = alpha * (isHovered||isSelected ? 1 : 0.85);
-    ctx.font = `bold ${Math.max(9, 11*cam.zoom)}px 'Syne',sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 6;
-    ctx.fillText(b.short, labelPos.sx, labelPos.sy);
+    ctx.globalAlpha=alpha*(isH||isSel?.95:.8);
+    const fs2=Math.max(9,Math.min(13,10*cam.zoom));
+    ctx.font=`700 ${fs2}px 'DM Sans',sans-serif`;
+    ctx.textAlign='center';
+    ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=8;
+    ctx.fillStyle='#ffffff';
+    ctx.fillText(b.emoji+' '+b.short,lp.sx,lp.sy);
     ctx.restore();
   }
- 
-  ctx.globalAlpha = 1;
+
+  ctx.globalAlpha=1;
 }
- 
-function lerp(a,b,t){return a+(b-a)*t;}
-function lighten(hex, pct) {
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), bl = parseInt(hex.slice(5,7),16);
-  return `rgb(${Math.min(255,r+pct)},${Math.min(255,g+pct)},${Math.min(255,bl+pct)})`;
-}
-function adjustColor(hex, pct) {
-  if (!hex || !hex.startsWith('#')) return hex;
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), bl = parseInt(hex.slice(5,7),16);
-  return `rgb(${Math.min(255,Math.max(0,r+pct))},${Math.min(255,Math.max(0,g+pct))},${Math.min(255,Math.max(0,bl+pct))})`;
-}
- 
-// ===================== MINIMAP =====================
-function drawMinimap() {
-  const mc = document.getElementById('mini');
-  const mctx = mc.getContext('2d');
-  mctx.clearRect(0,0,120,80);
-  mctx.fillStyle='rgba(17,24,39,1)';
-  mctx.fillRect(0,0,120,80);
- 
-  const sx = 120/800, sy = 80/450;
-  BUILDINGS.forEach(b => {
-    mctx.fillStyle = b.id===selectedId ? '#fff' : b.color;
-    mctx.globalAlpha = 0.8;
-    mctx.fillRect(b.x*sx, b.z*sy, b.w*sx, b.d*sy);
+
+// ═══════════════════════════════════════════════
+//  MINIMAP
+// ═══════════════════════════════════════════════
+function drawMinimap(){
+  const mc=document.getElementById('mini');
+  const mctx=mc.getContext('2d');
+  const MW=130,MH=88;
+  mctx.clearRect(0,0,MW,MH);
+  mctx.fillStyle=dayMode?'#d0dae8':'#0f1623';
+  mctx.fillRect(0,0,MW,MH);
+  const sx=MW/780,sy=MH/450;
+  // Paths
+  PATHS.forEach(p=>{
+    mctx.beginPath();mctx.moveTo(p.x1*sx,p.z1*sy);mctx.lineTo(p.x2*sx,p.z2*sy);
+    mctx.strokeStyle=dayMode?'rgba(160,180,210,1)':'rgba(40,70,120,1)';mctx.lineWidth=2;mctx.stroke();
   });
-  mctx.globalAlpha = 1;
+  // Buildings
+  BUILDINGS.forEach(b=>{
+    mctx.globalAlpha=b.id===selectedId?1:0.75;
+    mctx.fillStyle=b.id===selectedId?'#fff':b.color;
+    mctx.fillRect(b.x*sx,b.z*sy,b.w*sx,b.d*sy);
+    if(b.id===selectedId){mctx.strokeStyle='#fff';mctx.lineWidth=1.5;mctx.strokeRect(b.x*sx,b.z*sy,b.w*sx,b.d*sy);}
+  });
+  mctx.globalAlpha=1;
+  // Camera indicator (approx view area)
+  mctx.strokeStyle='rgba(0,229,160,.5)';mctx.lineWidth=1;mctx.setLineDash([3,3]);
+  mctx.strokeRect(15,10,100,68);mctx.setLineDash([]);
 }
- 
-// ===================== RENDER LOOP =====================
-function draw() {
+
+// ═══════════════════════════════════════════════
+//  COMPASS ROTATION
+// ═══════════════════════════════════════════════
+function updateCompass(){
+  const deg=(cam.ay*180/Math.PI)%360;
+  document.getElementById('compass').style.transform=`rotate(${-deg}deg)`;
+}
+
+// ═══════════════════════════════════════════════
+//  MAIN LOOP
+// ═══════════════════════════════════════════════
+function draw(){
+  time++;
   ctx.clearRect(0,0,W,H);
- 
-  // Smooth camera
-  cam.angleX += (cam.targetAngleX - cam.angleX) * 0.12;
-  cam.angleY += (cam.targetAngleY - cam.angleY) * 0.12;
-  cam.zoom   += (cam.targetZoom   - cam.zoom)   * 0.12;
- 
-  // Sky gradient
-  const sky = ctx.createLinearGradient(0,0,0,H);
-  sky.addColorStop(0,'#0a0e1a');
-  sky.addColorStop(1,'#111827');
-  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
- 
+
+  // Smooth cam
+  cam.ax+=(cam.tax-cam.ax)*.1;
+  cam.ay+=(cam.tay-cam.ay)*.1;
+  cam.zoom+=(cam.tzoom-cam.zoom)*.1;
+
+  // Stars (night only)
+  if(!dayMode&&cam.zoom<1.8){
+    ctx.fillStyle='rgba(8,12,24,1)';ctx.fillRect(0,0,W,H);
+    if(time%120===0||!window._stars){
+      window._stars=Array.from({length:80},()=>({x:Math.random()*W,y:Math.random()*H*.45,r:Math.random()*.8+.2,blink:Math.random()*Math.PI*2}));
+    }
+    window._stars.forEach(s=>{
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${.3+.3*Math.sin(time/80+s.blink)})`;ctx.fill();
+    });
+  } else {
+    ctx.fillStyle=dayMode?'#b8ccdf':'rgba(8,12,24,1)';ctx.fillRect(0,0,W,H);
+    if(dayMode){
+      // Sky gradient
+      const sky=ctx.createLinearGradient(0,0,0,H*.6);
+      sky.addColorStop(0,'#87ceeb');sky.addColorStop(1,'#dae8f5');
+      ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*.6);
+    }
+  }
+
   drawGround();
   drawPaths();
- 
-  // Sort buildings by depth
-  const sorted = [...BUILDINGS].sort((a,b) => {
-    const pa = project(a.x+a.w/2,0,a.z+a.d/2);
-    const pb = project(b.x+b.w/2,0,b.z+b.d/2);
-    return pb.sz - pa.sz;
+  BENCHES.forEach(p=>drawBench(p.x,p.z));
+  LAMPS.forEach(p=>drawLamp(p.x,p.z));
+
+  // Sort buildings back-to-front
+  const sorted=[...BUILDINGS].sort((a,b2)=>{
+    const pa=proj(a.x+a.w/2,0,a.z+a.d/2);
+    const pb=proj(b2.x+b2.w/2,0,b2.z+b2.d/2);
+    return pb.sz-pa.sz;
   });
- 
-  sorted.forEach(b => drawBuilding(b));
- 
-  TREES.forEach(t => drawTree(t.x, t.z));
- 
+  sorted.forEach(b=>drawBuilding(b));
+  TREES.forEach(t=>drawTree(t.x,t.z));
+
   drawMinimap();
+  updateCompass();
   requestAnimationFrame(draw);
 }
- 
-// Remove hint after animation
-setTimeout(() => {
-  const h = document.getElementById('hint');
-  if (h) h.remove();
-}, 4500);
- 
-resize();
+
+// ═══════════════════════════════════════════════
+//  ONBOARDING & LOADER
+// ═══════════════════════════════════════════════
+document.getElementById('onboard-btn').onclick=()=>{
+  document.getElementById('onboard').style.opacity='0';
+  document.getElementById('onboard').style.transition='opacity .4s';
+  setTimeout(()=>{document.getElementById('onboard').style.display='none';},400);
+};
+
+window.addEventListener('load',()=>{
+  // Start draw immediately
+  draw();
+  // Remove loader after 2s
+  setTimeout(()=>{
+    document.getElementById('loader').classList.add('gone');
+    setTimeout(()=>document.getElementById('loader').remove(),700);
+  },2000);
+});
+
 </script>
- 
-<!-- HINT -->
-<div id="hint">🖱 Arraste para rodar · Scroll para zoom · Clique num bloco para ver detalhes</div>
- 
 </body>
 </html>
