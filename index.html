@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa 3D Interativo - Campus Universitário</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Interface de Utilizador (UI) Overlay */
+        .ui-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            width: 320px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #38bdf8;
+            letter-spacing: 0.5px;
+        }
+
+        p.subtitle {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 15px;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        .results-list {
+            list-style: none;
+            max-height: 180px;
+            overflow-y: auto;
+            border-radius: 8px;
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        .results-list li {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s;
+        }
+
+        .results-list li:last-child {
+            border-bottom: none;
+        }
+
+        .results-list li:hover {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+        }
+
+        /* Painel de Informação Info Box */
+        #info-box {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(56, 189, 248, 0.1);
+            border-left: 4px solid #38bdf8;
+            border-radius: 4px;
+            display: none;
+        }
+
+        #info-box h3 {
+            font-size: 0.95rem;
+            color: #38bdf8;
+            margin-bottom: 4px;
+        }
+
+        #info-box p {
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+
+        /* Instruções de Navegação */
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            pointer-events: none;
+            text-align: center;
+        }
+
+        /* Ajustes Mobile */
+        @media (max-width: 480px) {
+            .ui-panel {
+                width: calc(100% - 40px);
+                top: 15px;
+                left: 20px;
+            }
+            .controls-hint {
+                width: 80%;
+                bottom: 15px;
+            }
+        }
+
+        /* Custom Scrollbar para os resultados */
+        .results-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .results-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .results-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        .results-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+    <!-- Carregar Three.js e OrbitControls via CDN confiável -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div class="ui-panel">
+        <h1>Localizador Campus 3D</h1>
+        <p class="subtitle">Encontra as tuas salas e laboratórios</p>
+        
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="Digita a sala ou bloco... (ex: Sala 102)">
+        </div>
+
+        <ul class="results-list" id="results-container">
+            <!-- Gerado dinamicamente via JS -->
+        </ul>
+
+        <div id="info-box">
+            <h3 id="info-title">Nome do Bloco</h3>
+            <p id="info-desc">Detalhes sobre as salas deste edifício.</p>
+        </div>
+    </div>
+
+    <div class="controls-hint">
+        Arrasta para rodar | Scroll para Zoom | Botão direito para arrastar o mapa
+    </div>
+
+    <script>
+        // 1. Dados Estruturados do Campus (Simulação Leve Baseada em Nós/Objetos)
+        const campusData = [
+            { 
+                id: 'blocoA', 
+                name: 'Bloco A - Engenharia e TI', 
+                x: -6, z: -4, w: 5, h: 4, d: 4, 
+                color: 0x0ea5e9, 
+                rooms: ['Sala 101', 'Sala 102', 'Sala 103', 'Laboratório de Informática (LTI)', 'Gabinete do Diretor'] 
+            },
+            { 
+                id: 'blocoB', 
+                name: 'Bloco B - Ciências Exatas', 
+                x: 6, z: -5, w: 4, h: 3, d: 5, 
+                color: 0x8b5cf6, 
+                rooms: ['Sala 201', 'Sala 202', 'Laboratório de Física', 'Laboratório de Química'] 
+            },
+            { 
+                id: 'biblioteca', 
+                name: 'Biblioteca Central', 
+                x: 0, z: 6, w: 6, h: 3.5, d: 5, 
+                color: 0xec4899, 
+                rooms: ['Sala de Estudo Geral', 'Zona de Computadores', 'Acervo de Livros'] 
+            },
+            { 
+                id: 'secretaria', 
+                name: 'Secretaria e Registo Académico', 
+                x: -7, z: 5, w: 3.5, h: 2.5, d: 3.5, 
+                color: 0xeab308, 
+                rooms: ['Atendimento ao Estudante', 'Tesouraria', 'Recursos Humanos'] 
+            },
+            { 
+                id: 'cantina', 
+                name: 'Cantina & Lazer', 
+                x: 7, z: 4, w: 4.5, h: 2, d: 4, 
+                color: 0x10b981, 
+                rooms: ['Refeitório', 'Esplanada', 'Copiatória'] 
+            }
+        ];
+
+        // 2. Configuração Básica da Cena Three.js
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0f172a);
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
+
+        // Câmara
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 25, 30);
+
+        // Renderizador otimizado
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limita a 2 para performance mobile
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        // Controlos de órbita
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2.1; // Não deixa ir abaixo do chão
+        controls.minDistance = 5;
+        controls.maxDistance = 60;
+
+        // 3. Iluminação do Cenário
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(20, 40, 20);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        // 4. Criação do Ambiente (Chão e Estradas Simples)
+        // Chão Principal (Campus)
+        const floorGeo = new THREE.PlaneGeometry(60, 60);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Linhas de Grade de Design (Dá o aspeto tecnológico/moderno de mapa)
+        const gridHelper = new THREE.GridHelper(60, 30, 0x38bdf8, 0x334155);
+        gridHelper.position.y = 0.01; // Ligeiramente acima do chão para evitar z-fighting
+        scene.add(gridHelper);
+
+        // 5. Construção dos Edifícios Baseados nos Dados
+        const buildingMeshes = {};
+
+        campusData.forEach(data => {
+            // Grupo para conter o edifício e possíveis marcadores futuros
+            const group = new THREE.Group();
+            group.position.set(data.x, 0, data.z);
+
+            // Geometria da Malha do Edifício
+            const geo = new THREE.BoxGeometry(data.w, data.h, data.d);
+            const mat = new THREE.MeshStandardMaterial({
+                color: data.color,
+                roughness: 0.4,
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.9
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.y = data.h / 2; // Alinha a base no chão
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            
+            // Guardar meta-dados úteis no próprio objeto
+            mesh.userData = { id: data.id, originalColor: data.color, name: data.name };
+            
+            group.add(mesh);
+            scene.add(group);
+
+            // Guardar referência para manipulação na pesquisa
+            buildingMeshes[data.id] = mesh;
+        });
+
+        // 6. Sistema de Animação de Interpolação (Lerp) para a Câmara
+        let targetLookAt = new THREE.Vector3(0, 0, 0);
+        let targetCameraPos = new THREE.Vector3(0, 25, 30);
+        let isTransitioning = false;
+
+        function smoothMoveCamera(lookAtTarget, cameraTarget) {
+            targetLookAt.copy(lookAtTarget);
+            targetCameraPos.copy(cameraTarget);
+            isTransitioning = true;
+        }
+
+        // 7. Lógica UI, Pesquisa e Interação
+        const searchInput = document.getElementById('search-input');
+        const resultsContainer = document.getElementById('results-container');
+        const infoBox = document.getElementById('info-box');
+        const infoTitle = document.getElementById('info-title');
+        const infoDesc = document.getElementById('info-desc');
+
+        // Inicializar lista completa de salas ao carregar
+        renderResults("");
+
+        searchInput.addEventListener('input', (e) => {
+            renderResults(e.target.value.toLowerCase());
+        });
+
+        function renderResults(query) {
+            resultsContainer.innerHTML = "";
+            let matchesFound = false;
+
+            campusData.forEach(block => {
+                // Verificar se a query bate com o nome do bloco ou com alguma sala contida nele
+                const matchedRooms = block.rooms.filter(room => room.toLowerCase().includes(query));
+                const blockMatches = block.name.toLowerCase().includes(query);
+
+                if (blockMatches || matchedRooms.length > 0) {
+                    matchesFound = true;
+                    
+                    // Se o utilizador pesquisar especificamente e bater numa sala, listar a sala primeiro
+                    if (query !== "" && matchedRooms.length > 0) {
+                        matchedRooms.forEach(room => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `📍 <strong>${room}</strong> <span style="color:#94a3b8; font-size:0.75rem;"><br>localizado no ${block.name}</span>`;
+                            li.addEventListener('click', () => selectBuilding(block.id, room));
+                            resultsContainer.appendChild(li);
+                        });
+                    } else {
+                        // Caso geral ou correspondência de Bloco
+                        const li = document.createElement('li');
+                        li.innerHTML = `🏢 <strong>${block.name}</strong>`;
+                        li.addEventListener('click', () => selectBuilding(block.id, null));
+                        resultsContainer.appendChild(li);
+                    }
+                }
+            });
+
+            if (!matchesFound) {
+                const li = document.createElement('li');
+                li.style.color = '#ef4444';
+                li.innerText = "Nenhuma sala ou bloco encontrado.";
+                resultsContainer.appendChild(li);
+            }
+        }
+
+        function selectBuilding(id, specificRoom) {
+            // Resetar cores de todos os edifícios primeiro
+            Object.values(buildingMeshes).forEach(mesh => {
+                mesh.material.color.setHex(mesh.userData.originalColor);
+                mesh.material.opacity = 0.8;
+            });
+
+            const activeMesh = buildingMeshes[id];
+            const data = campusData.find(d => d.id === id);
+
+            if (activeMesh && data) {
+                // Dar destaque visual piscando ou mudando para cor de seleção (Ciano Vivo)
+                activeMesh.material.color.setHex(0x38bdf8);
+                activeMesh.material.opacity = 1.0;
+
+                // Atualizar Caixa de Informação da UI
+                infoBox.style.display = 'block';
+                if (specificRoom) {
+                    infoTitle.innerText = specificRoom;
+                    infoDesc.innerText = `Esta sala está localizada no edifício: ${data.name}. Siga para este bloco destacado no mapa.`;
+                } else {
+                    infoTitle.innerText = data.name;
+                    infoDesc.innerText = `Salas neste bloco: 
+` + data.rooms.join(', ');
+                }
+
+                // Calcular novas posições de foco da câmara para transição suave
+                const buildingWorldPos = new THREE.Vector3(data.x, data.h / 2, data.z);
+                const newCameraPos = new THREE.Vector3(data.x, data.h + 8, data.z + 12);
+                
+                smoothMoveCamera(buildingWorldPos, newCameraPos);
+            }
+        }
+
+        // 8. Loop de Animação Principal (Render Loop)
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Interpolação suave da câmara se estiver em transição ativa
+            if (isTransitioning) {
+                // Aproximação linear amortecida (Lerp)
+                camera.position.lerp(targetCameraPos, 0.05);
+                controls.target.lerp(targetLookAt, 0.05);
+
+                // Se estiver muito próximo do alvo, encerra transição manual para deixar o utilizador assumir o controlo
+                if (camera.position.distanceTo(targetCameraPos) < 0.1 && controls.target.distanceTo(targetLookAt) < 0.1) {
+                    isTransitioning = false;
+                }
+            }
+
+            // Animação leve de rotação lenta de fundo se o utilizador não estiver a mexer (opcional)
+            // Se quiseres um mapa estático, deixa os controlos ativos gerirem tudo
+            controls.update();
+            renderer.render(scene, `camera`);
+        }
+
+        // Ajustar redimensionamento de ecrã (Responsividade)
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Iniciar loop
+        animate();
+    </script>
+</body>
+</html>
